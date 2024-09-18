@@ -9,49 +9,60 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @State private var searchText = ""
+    @State private var readingList: [String] = ["Book Name 1", "Book Name 2"] // 示例书名
 
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+        NavigationView {
+            VStack {
+                // 搜索框
+                TextField("Search Books", text: $searchText)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding()
+
+                // 阅读列表
+                Text("Reading List")
+                    .font(.headline)
+                    .padding(.top)
+
+                ScrollView(.horizontal) {
+                    HStack {
+                        ForEach(readingList, id: \.self) { book in
+                            VStack {
+                                Image(systemName: "book.fill") // 替换为书籍封面图
+                                    .resizable()
+                                    .frame(width: 100, height: 150)
+                                Text(book)
+                            }
+                            .padding()
+                        }
                     }
                 }
-                .onDelete(perform: deleteItems)
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
+
+                Spacer()
+
+                // 导航按钮
+                HStack {
+                    NavigationLink(destination: ShelfView()) {
+                        Text("Shelf")
+                    }
+                    Spacer()
+                    ScannerButton()
+                    Spacer()
+                    NavigationLink(destination: SettingsView()) {
+                        Text("Settings")
                     }
                 }
+                .padding()
             }
-        } detail: {
-            Text("Select an item")
+            .navigationTitle("My Bookshelf")
         }
     }
+}
 
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
-            }
-        }
+struct SettingsView: View {
+    var body: some View {
+        Text("Settings View")
     }
 }
 
@@ -59,3 +70,4 @@ struct ContentView: View {
     ContentView()
         .modelContainer(for: Item.self, inMemory: true)
 }
+
