@@ -9,39 +9,55 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
+    @StateObject private var storageManager = StorageManager.shared
     @State private var searchText = ""
-    @State private var readingList: [String] = ["Book Name 1", "Book Name 2"] // 示例书名
-
+    @State private var shelves: [Shelf] = []
+    @State private var books: [Book] = []
+    @State private var showingSettings = false
+    
     var body: some View {
         NavigationView {
             VStack {
-                // 搜索框
+                // Search bar
                 TextField("Search Books", text: $searchText)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding()
-
-                // 阅读列表
+                
+                // Reading list
                 Text("Reading List")
                     .font(.headline)
                     .padding(.top)
-
+                
                 ScrollView(.horizontal) {
                     HStack {
-                        ForEach(readingList, id: \.self) { book in
+                        ForEach(books.filter { $0.isInReadingList }) { book in
                             VStack {
-                                Image(systemName: "book.fill") // 替换为书籍封面图
+                                Image(systemName: "book.fill") // Replace with book cover image
                                     .resizable()
                                     .frame(width: 100, height: 150)
-                                Text(book)
+                                Text(book.title)
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.center)
                             }
+                            .frame(width: 120)
                             .padding()
                         }
                     }
                 }
-
-                Spacer()
-
-                // 导航按钮
+                
+                // Shelves list
+                List(shelves) { shelf in
+                    NavigationLink(destination: ShelfDetailView(shelf: shelf)) {
+                        HStack {
+                            Text(shelf.name)
+                            Spacer()
+                            Text("\(shelf.bookCount) books")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+                
+                // Navigation buttons
                 HStack {
                     NavigationLink(destination: ShelfView()) {
                         Text("Shelf")
@@ -49,20 +65,59 @@ struct ContentView: View {
                     Spacer()
                     ScannerButton()
                     Spacer()
-                    NavigationLink(destination: SettingsView()) {
-                        Text("Settings")
+                    Button("Settings") {
+                        showingSettings = true
                     }
                 }
                 .padding()
             }
             .navigationTitle("My Bookshelf")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        showingSettings = true
+                    }) {
+                        Image(systemName: "gear")
+                    }
+                }
+            }
+            .sheet(isPresented: $showingSettings) {
+                NavigationView {
+                    SettingsView()
+                }
+            }
+        }
+        .onAppear {
+            loadData()
+        }
+    }
+    
+    private func loadData() {
+        storageManager.fetchShelves { result in
+            switch result {
+            case .success(let fetchedShelves):
+                self.shelves = fetchedShelves
+            case .failure(let error):
+                print("Error fetching shelves: \(error)")
+            }
+        }
+        
+        storageManager.fetchBooks { result in
+            switch result {
+            case .success(let fetchedBooks):
+                self.books = fetchedBooks
+            case .failure(let error):
+                print("Error fetching books: \(error)")
+            }
         }
     }
 }
 
-struct SettingsView: View {
+struct ShelfDetailView: View {
+    let shelf: Shelf
+    
     var body: some View {
-        Text("Settings View")
+        Text("Details for \(shelf.name)")
     }
 }
 
