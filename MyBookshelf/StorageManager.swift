@@ -29,6 +29,14 @@ class StorageManager: ObservableObject {
         coreDataManager.fetchBooks(completion: completion)
     }
 
+    func addBook(_ book: Book, completion: @escaping (Result<Void, Error>) -> Void) {
+        // 这里应该实现实际的保存逻辑，可能是保存到Core Data或其他存储方式
+        // 为了演示，我们只是模拟一个成功的保存操作
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            completion(.success(()))
+        }
+    }
+
     func exportData() -> Data? {
         return coreDataManager.exportData()
     }

@@ -2,8 +2,13 @@
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23231" systemVersion="23G93" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
     <entity name="BookEntity" representedClassName="BookEntity" syncable="YES" codeGenerationType="class">
         <attribute name="author" optional="YES" attributeType="String"/>
-        <attribute name="isbn" optional="YES" attributeType="String"/>
+        <attribute name="coverImageURL" optional="YES" attributeType="String"/>
+        <attribute name="isbn10" optional="YES" attributeType="String"/>
+        <attribute name="isbn13" optional="YES" attributeType="String"/>
         <attribute name="isInReadingList" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="publishDate" optional="YES" attributeType="String"/>
+        <attribute name="publisher" optional="YES" attributeType="String"/>
+        <attribute name="shelfUuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="title" optional="YES" attributeType="String"/>
         <relationship name="shelf" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="ShelfEntity" inverseName="books" inverseEntity="ShelfEntity"/>
     </entity>

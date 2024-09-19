@@ -12,7 +12,7 @@ struct ScannerButton: View {
             Text("Scan")
         }
         .fullScreenCover(isPresented: $isPresentingScanner) {
-            ScannerView(scannedCode: $scannedCode, alertItem: $alertItem)
+            ScannerView()
         }
         .modifier(ScannedCodeChangeModifier(scannedCode: scannedCode, action: handleScannedISBN))
         .alert(item: $alertItem) { alertItem in

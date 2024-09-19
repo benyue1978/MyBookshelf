@@ -92,7 +92,12 @@ class CoreDataManager {
             let books = bookEntities.map { entity in
                 Book(title: entity.title ?? "",
                      author: entity.author ?? "",
-                     isbn: entity.isbn ?? "",
+                     isbn13: entity.isbn13 ?? "",
+                     isbn10: entity.isbn10 ?? "",
+                     publisher: entity.publisher ?? "",
+                     publishDate: entity.publishDate ?? "",
+                     coverImageURL: entity.coverImageURL ?? "",
+                     shelfUuid: entity.shelfUuid ?? nil,
                      isInReadingList: entity.isInReadingList)
             }
             completion(.success(books))
