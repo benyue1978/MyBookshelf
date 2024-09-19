@@ -14,14 +14,28 @@ class CoreDataManager {
         }
     }
     
-    func saveShelves(_ shelves: [Shelf], completion: @escaping (Result<Void, Error>) -> Void) {
+    func fetchShelves(completion: @escaping (Result<[Shelf], Error>) -> Void) {
         let context = persistentContainer.viewContext
+        let fetchRequest: NSFetchRequest<ShelfEntity> = ShelfEntity.fetchRequest()
         
-        for shelf in shelves {
-            let shelfEntity = ShelfEntity(context: context)
-            shelfEntity.name = shelf.name
-            shelfEntity.bookCount = Int16(shelf.bookCount)
+        do {
+            let shelfEntities = try context.fetch(fetchRequest)
+            let shelves = shelfEntities.compactMap { entity -> Shelf? in
+                guard let id = entity.id else { return nil }
+                return Shelf(id: id, name: entity.name ?? "", bookCount: Int(entity.bookCount))
+            }
+            completion(.success(shelves))
+        } catch {
+            completion(.failure(error))
         }
+    }
+    
+    func addShelf(name: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        let context = persistentContainer.viewContext
+        let newShelf = ShelfEntity(context: context)
+        newShelf.id = UUID()
+        newShelf.name = name
+        newShelf.bookCount = 0
         
         do {
             try context.save()
@@ -31,16 +45,39 @@ class CoreDataManager {
         }
     }
     
-    func fetchShelves(completion: @escaping (Result<[Shelf], Error>) -> Void) {
+    func updateShelf(id: UUID, newName: String, completion: @escaping (Result<Void, Error>) -> Void) {
         let context = persistentContainer.viewContext
         let fetchRequest: NSFetchRequest<ShelfEntity> = ShelfEntity.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "id == %@", id as CVarArg)
         
         do {
-            let shelfEntities = try context.fetch(fetchRequest)
-            let shelves = shelfEntities.map { entity in
-                Shelf(name: entity.name ?? "", bookCount: Int(entity.bookCount))
+            let results = try context.fetch(fetchRequest)
+            if let shelfToUpdate = results.first {
+                shelfToUpdate.name = newName
+                try context.save()
+                completion(.success(()))
+            } else {
+                completion(.failure(NSError(domain: "com.myapp", code: 404, userInfo: [NSLocalizedDescriptionKey: "Shelf not found"])))
             }
-            completion(.success(shelves))
+        } catch {
+            completion(.failure(error))
+        }
+    }
+    
+    func deleteShelf(id: UUID, completion: @escaping (Result<Void, Error>) -> Void) {
+        let context = persistentContainer.viewContext
+        let fetchRequest: NSFetchRequest<ShelfEntity> = ShelfEntity.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        
+        do {
+            let results = try context.fetch(fetchRequest)
+            if let shelfToDelete = results.first {
+                context.delete(shelfToDelete)
+                try context.save()
+                completion(.success(()))
+            } else {
+                completion(.failure(NSError(domain: "com.myapp", code: 404, userInfo: [NSLocalizedDescriptionKey: "Shelf not found"])))
+            }
         } catch {
             completion(.failure(error))
         }
@@ -72,5 +109,29 @@ class CoreDataManager {
     func importData(_ data: Data) -> Bool {
         // 实现数据导入逻辑
         return false
+    }
+
+    func clearAllData(completion: @escaping (Result<Void, Error>) -> Void) {
+        let context = persistentContainer.viewContext
+        let entityNames = ["ShelfEntity", "BookEntity"] // 添加所有你的实体名称
+        
+        for entityName in entityNames {
+            let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: entityName)
+            let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+            
+            do {
+                try context.execute(deleteRequest)
+            } catch {
+                completion(.failure(error))
+                return
+            }
+        }
+        
+        do {
+            try context.save()
+            completion(.success(()))
+        } catch {
+            completion(.failure(error))
+        }
     }
 }

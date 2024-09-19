@@ -9,6 +9,7 @@
     </entity>
     <entity name="ShelfEntity" representedClassName="ShelfEntity" syncable="YES" codeGenerationType="class">
         <attribute name="bookCount" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="name" optional="YES" attributeType="String"/>
         <relationship name="books" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="BookEntity" inverseName="shelf" inverseEntity="BookEntity"/>
     </entity>

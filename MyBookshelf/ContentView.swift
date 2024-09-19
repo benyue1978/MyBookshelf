@@ -16,7 +16,6 @@ struct ContentView: View {
     @State private var showingSettings = false
     @State private var showingShelfView = false
     @State private var scannedCode = ""
-    @State private var alertItem: AlertItem?
     
     var body: some View {
         NavigationView {
@@ -85,10 +84,10 @@ struct ContentView: View {
                 }
             }
             .fullScreenCover(isPresented: $showingSettings) {
-                SettingsView()
+                SettingsView(isPresented: $showingSettings)
             }
             .fullScreenCover(isPresented: $showingShelfView) {
-                ShelfView()
+                ShelfView(isPresented: $showingShelfView)
             }
         }
         .environmentObject(storageManager)

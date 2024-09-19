@@ -1,10 +1,11 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @Environment(\.presentationMode) var presentationMode
+    @Binding var isPresented: Bool
     @ObservedObject var storageManager = StorageManager.shared
     @State private var showingExportSheet = false
     @State private var showingImportSheet = false
+    @State private var showingClearDataAlert = false
     
     var body: some View {
         NavigationView {
@@ -17,15 +18,30 @@ struct SettingsView: View {
                     Button("Import Data") {
                         showingImportSheet = true
                     }
+                    
+                    Button("Clear All Data") {
+                        showingClearDataAlert = true
+                    }
+                    .foregroundColor(.red)
                 }
             }
             .navigationTitle("Settings")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Back") {
-                        presentationMode.wrappedValue.dismiss()
+                        isPresented = false
                     }
                 }
+            }
+            .alert(isPresented: $showingClearDataAlert) {
+                Alert(
+                    title: Text("Clear All Data"),
+                    message: Text("Are you sure you want to clear all data? This action cannot be undone."),
+                    primaryButton: .destructive(Text("Clear")) {
+                        clearAllData()
+                    },
+                    secondaryButton: .cancel()
+                )
             }
         }
         .sheet(isPresented: $showingImportSheet) {
@@ -41,6 +57,17 @@ struct SettingsView: View {
                 showingExportSheet = true
             } catch {
                 print("Error exporting data: \(error)")
+            }
+        }
+    }
+    
+    private func clearAllData() {
+        storageManager.clearAllData { result in
+            switch result {
+            case .success:
+                print("All data cleared successfully")
+            case .failure(let error):
+                print("Error clearing data: \(error.localizedDescription)")
             }
         }
     }
