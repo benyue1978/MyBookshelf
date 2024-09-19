@@ -14,6 +14,9 @@ struct ContentView: View {
     @State private var shelves: [Shelf] = []
     @State private var books: [Book] = []
     @State private var showingSettings = false
+    @State private var showingShelfView = false
+    @State private var scannedCode = ""
+    @State private var alertItem: AlertItem?
     
     var body: some View {
         NavigationView {
@@ -59,8 +62,8 @@ struct ContentView: View {
                 
                 // Navigation buttons
                 HStack {
-                    NavigationLink(destination: ShelfView()) {
-                        Text("Shelf")
+                    Button("Shelf") {
+                        showingShelfView = true
                     }
                     Spacer()
                     ScannerButton()
@@ -81,12 +84,14 @@ struct ContentView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showingSettings) {
-                NavigationView {
-                    SettingsView()
-                }
+            .fullScreenCover(isPresented: $showingSettings) {
+                SettingsView()
+            }
+            .fullScreenCover(isPresented: $showingShelfView) {
+                ShelfView()
             }
         }
+        .environmentObject(storageManager)
         .onAppear {
             loadData()
         }

@@ -1,23 +1,33 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @Environment(\.presentationMode) var presentationMode
     @ObservedObject var storageManager = StorageManager.shared
     @State private var showingExportSheet = false
     @State private var showingImportSheet = false
     
     var body: some View {
-        Form {
-            Section(header: Text("Data Management")) {
-                Button("Export Data") {
-                    exportData()
+        NavigationView {
+            Form {
+                Section(header: Text("Data Management")) {
+                    Button("Export Data") {
+                        exportData()
+                    }
+                    
+                    Button("Import Data") {
+                        showingImportSheet = true
+                    }
                 }
-                
-                Button("Import Data") {
-                    showingImportSheet = true
+            }
+            .navigationTitle("Settings")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Back") {
+                        presentationMode.wrappedValue.dismiss()
+                    }
                 }
             }
         }
-        .navigationTitle("Settings")
         .sheet(isPresented: $showingImportSheet) {
             ImportView(storageManager: storageManager)
         }

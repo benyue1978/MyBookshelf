@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ShelfView: View {
+    @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var storageManager: StorageManager
     @State private var shelves: [Shelf] = []
     @State private var newShelfName = ""
@@ -8,36 +9,41 @@ struct ShelfView: View {
     @State private var errorMessage: String?
     
     var body: some View {
-        VStack {
-            Text("Bookshelves")
-                .font(.largeTitle)
-                .padding()
-            
-            if isLoading {
-                ProgressView()
-            } else {
-                List {
-                    ForEach(shelves, id: \.id) { shelf in
-                        HStack {
-                            Text(shelf.name)
-                            Spacer()
-                            Text("\(shelf.bookCount)")
+        NavigationView {
+            VStack {
+                if isLoading {
+                    ProgressView()
+                } else {
+                    List {
+                        ForEach(shelves, id: \.id) { shelf in
+                            HStack {
+                                Text(shelf.name)
+                                Spacer()
+                                Text("\(shelf.bookCount)")
+                            }
                         }
+                        .onDelete(perform: deleteShelf)
                     }
-                    .onDelete(perform: deleteShelf)
+                }
+                
+                HStack {
+                    TextField("Add Shelf", text: $newShelfName)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    Button(action: addShelf) {
+                        Text("Add Shelf")
+                    }
+                }
+                .padding()
+            }
+            .navigationTitle("Bookshelves")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Back") {
+                        presentationMode.wrappedValue.dismiss()
+                    }
                 }
             }
-            
-            HStack {
-                TextField("Add Shelf", text: $newShelfName)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                Button(action: addShelf) {
-                    Text("Add Shelf")
-                }
-            }
-            .padding()
         }
-        .navigationTitle("Bookshelves")
         .onAppear(perform: loadShelves)
         .alert(item: Binding<AlertItem?>(
             get: { errorMessage.map { AlertItem(title: "Error", message: $0) } },
@@ -99,5 +105,12 @@ struct Shelf: Identifiable, Hashable {
         self.id = id
         self.name = name
         self.bookCount = bookCount
+    }
+}
+
+struct ShelfView_Previews: PreviewProvider {
+    static var previews: some View {
+        ShelfView()
+            .environmentObject(StorageManager.shared)
     }
 }

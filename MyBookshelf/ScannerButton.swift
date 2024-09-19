@@ -11,7 +11,7 @@ struct ScannerButton: View {
         }) {
             Text("Scan")
         }
-        .sheet(isPresented: $isPresentingScanner) {
+        .fullScreenCover(isPresented: $isPresentingScanner) {
             ScannerView(scannedCode: $scannedCode, alertItem: $alertItem)
         }
         .modifier(ScannedCodeChangeModifier(scannedCode: scannedCode, action: handleScannedISBN))
