@@ -122,6 +122,8 @@ struct ShelfDetailView: View {
     
     var body: some View {
         Text("Details for \(shelf.name)")
+        Spacer()
+        Text("\(shelf.bookCount) books")
     }
 }
 

@@ -38,7 +38,7 @@ struct ShelfView: View {
                             HStack {
                                 Text(shelf.name)
                                 Spacer()
-                                Text("\(shelf.bookCount)")
+                                Text("\(shelf.bookCount) books")
                             }
                             .onTapGesture(count: 2) {
                                 editingShelfId = shelf.id
