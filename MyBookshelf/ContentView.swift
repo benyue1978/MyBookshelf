@@ -15,7 +15,7 @@ struct ContentView: View {
     @State private var books: [Book] = []
     @State private var showingSettings = false
     @State private var showingShelfView = false
-    @State private var scannedCode = ""
+    @State private var showingScanner = false
     
     var body: some View {
         NavigationView {
@@ -34,9 +34,18 @@ struct ContentView: View {
                     HStack {
                         ForEach(books.filter { $0.isInReadingList }) { book in
                             VStack {
-                                Image(systemName: "book.fill") // Replace with book cover image
-                                    .resizable()
+                                if let coverImageURL = book.coverImageURL, let url = URL(string: coverImageURL) {
+                                    AsyncImage(url: url) { image in
+                                        image.resizable().aspectRatio(contentMode: .fit)
+                                    } placeholder: {
+                                        Image(systemName: "book.fill")
+                                    }
                                     .frame(width: 100, height: 150)
+                                } else {
+                                    Image(systemName: "book.fill")
+                                        .resizable()
+                                        .frame(width: 100, height: 150)
+                                }
                                 Text(book.title)
                                     .lineLimit(2)
                                     .multilineTextAlignment(.center)
@@ -49,7 +58,7 @@ struct ContentView: View {
                 
                 // Shelves list
                 List(shelves) { shelf in
-                    NavigationLink(destination: ShelfDetailView(shelf: shelf)) {
+                    NavigationLink(destination: ShelfView(isPresented: .constant(true))) {
                         HStack {
                             Text(shelf.name)
                             Spacer()

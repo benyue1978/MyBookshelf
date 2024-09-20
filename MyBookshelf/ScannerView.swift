@@ -3,17 +3,20 @@ import AVFoundation
 
 struct ScannerView: View {
     @Environment(\.presentationMode) var presentationMode
+    @EnvironmentObject var storageManager: StorageManager
     @State private var scannedCode: String = ""
     @State private var alertItem: AlertItem?
     @State private var isCameraActive = true
     @State private var capturedImage: UIImage?
     @State private var showingBookView = false
+    @State private var isCapturing = false
+    @State private var isResetting = false
     
     var body: some View {
         NavigationView {
             GeometryReader { geometry in
                 ZStack {
-                    ScannerViewController(scannedCode: $scannedCode, alertItem: $alertItem, isCameraActive: $isCameraActive, capturedImage: $capturedImage)
+                    ScannerViewController(scannedCode: $scannedCode, alertItem: $alertItem, isCameraActive: $isCameraActive, capturedImage: $capturedImage, isCapturing: $isCapturing, isResetting: $isResetting)
                         .edgesIgnoringSafeArea(.all)
                     
                     VStack {
@@ -30,12 +33,14 @@ struct ScannerView: View {
                         ZStack {
                             // 拍照按钮
                             Button(action: {
-                                if isCameraActive {
-                                    isCameraActive = false
+                                if capturedImage == nil {
+                                    if !isCapturing {
+                                        isCapturing = true
+                                        print("Camera button pressed: Capturing image")
+                                    }
                                 } else {
-                                    isCameraActive = true
-                                    scannedCode = ""
-                                    capturedImage = nil
+                                    print("Reset button pressed")
+                                    isResetting = true
                                 }
                             }) {
                                 ZStack {
@@ -43,16 +48,17 @@ struct ScannerView: View {
                                         .stroke(Color.black, lineWidth: 2)
                                         .frame(width: 72, height: 72)
                                     
-                                    Image(systemName: isCameraActive ? "camera.circle.fill" : "arrow.triangle.2.circlepath.circle.fill")
+                                    Image(systemName: capturedImage == nil ? "camera.circle.fill" : "arrow.triangle.2.circlepath.circle.fill")
                                         .resizable()
                                         .frame(width: 70, height: 70)
                                         .foregroundColor(.white)
                                 }
                             }
                             .position(x: geometry.size.width / 2, y: 0)
+                            .disabled(isCapturing || isResetting)
                             
                             // 绿色对钩按钮
-                            if !isCameraActive {
+                            if capturedImage != nil {
                                 Button(action: {
                                     showingBookView = true
                                 }) {
@@ -75,7 +81,16 @@ struct ScannerView: View {
             })
         }
         .sheet(isPresented: $showingBookView) {
-            BookView(isbn: scannedCode, coverImage: capturedImage, isPresented: $showingBookView)
+            if let capturedImage = capturedImage {
+                BookView(isbn: scannedCode, coverImage: capturedImage, isPresented: $showingBookView)
+                    .environmentObject(storageManager)
+            } else {
+                BookView(isbn: scannedCode, coverImage: nil, isPresented: $showingBookView)
+                    .environmentObject(storageManager)
+            }
+        }
+        .alert(item: $alertItem) { alertItem in
+            Alert(title: Text(alertItem.title), message: Text(alertItem.message), dismissButton: .default(Text("OK")))
         }
     }
 }
@@ -85,6 +100,8 @@ struct ScannerViewController: UIViewControllerRepresentable {
     @Binding var alertItem: AlertItem?
     @Binding var isCameraActive: Bool
     @Binding var capturedImage: UIImage?
+    @Binding var isCapturing: Bool
+    @Binding var isResetting: Bool
     
     func makeUIViewController(context: Context) -> UIViewController {
         let viewController = UIViewController()
@@ -96,15 +113,30 @@ struct ScannerViewController: UIViewControllerRepresentable {
     
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
         if let scannerView = uiViewController.view.subviews.first as? CameraScannerView {
-            DispatchQueue.global(qos: .userInitiated).async {
-                scannerView.isCameraActive = self.isCameraActive
-            }
-            if !isCameraActive {
+            scannerView.isCameraActive = self.isCameraActive
+            
+            if isCapturing {
+                print("Attempting to capture image...")
                 scannerView.captureImage { image in
                     DispatchQueue.main.async {
                         self.capturedImage = image
+                        self.isCapturing = false
+                        self.isCameraActive = false
+                        print("Image captured and set: \(image != nil)")
+                        if let image = image {
+                            print("Captured image size: \(image.size)")
+                        }
                     }
                 }
+            }
+            
+            if isResetting {
+                print("Resetting camera")
+                self.capturedImage = nil
+                self.scannedCode = ""
+                self.isCameraActive = true
+                scannerView.startCaptureSession()
+                self.isResetting = false
             }
         }
     }
@@ -215,22 +247,48 @@ class CameraScannerView: UIView, AVCaptureMetadataOutputObjectsDelegate, AVCaptu
     
     func captureImage(completion: @escaping (UIImage?) -> Void) {
         guard let photoOutput = self.photoOutput else {
+            print("photoOutput is nil")
             completion(nil)
             return
         }
 
-        self.completionHandler = completion
+        guard captureSession.isRunning else {
+            print("Capture session is not running")
+            completion(nil)
+            return
+        }
 
         let settings = AVCapturePhotoSettings()
+        print("Capturing photo with settings: \(settings)")
         photoOutput.capturePhoto(with: settings, delegate: self)
+        self.completionHandler = completion
     }
     
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
-        guard let imageData = photo.fileDataRepresentation(),
-              let image = UIImage(data: imageData) else {
+        if let error = error {
+            print("Error capturing photo: \(error.localizedDescription)")
             completionHandler?(nil)
             return
         }
-        completionHandler?(image)
+        
+        guard let imageData = photo.fileDataRepresentation(),
+              let image = UIImage(data: imageData) else {
+            print("Failed to create image from captured data")
+            completionHandler?(nil)
+            return
+        }
+        
+        print("Photo captured successfully. Image size: \(image.size)")
+        DispatchQueue.main.async { [weak self] in
+            self?.completionHandler?(image)
+        }
+    }
+
+    func startCaptureSession() {
+        if !captureSession.isRunning {
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                self?.captureSession.startRunning()
+            }
+        }
     }
 }
