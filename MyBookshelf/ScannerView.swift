@@ -67,7 +67,7 @@ struct ScannerView: View {
                                         .frame(width: 50, height: 50)
                                         .foregroundColor(.green)
                                 }
-                                .position(x: geometry.size.width / 4 - 25, y: 0)
+                                .position(x: geometry.size.width / 4, y: 0)
                             }
                         }
                         .frame(height: 32)
@@ -106,7 +106,6 @@ struct ScannerViewController: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
         let viewController = UIViewController()
         let scannerView = CameraScannerView(frame: viewController.view.bounds)
-        scannerView.delegate = context.coordinator
         viewController.view.addSubview(scannerView)
         return viewController
     }
@@ -132,11 +131,13 @@ struct ScannerViewController: UIViewControllerRepresentable {
             
             if isResetting {
                 print("Resetting camera")
-                self.capturedImage = nil
-                self.scannedCode = ""
-                self.isCameraActive = true
-                scannerView.startCaptureSession()
-                self.isResetting = false
+                DispatchQueue.main.async {
+                    self.capturedImage = nil
+                    self.scannedCode = ""
+                    self.isCameraActive = true
+                    self.isResetting = false
+                }
+                scannerView.reset()
             }
         }
     }
@@ -164,24 +165,18 @@ struct ScannerViewController: UIViewControllerRepresentable {
     }
 }
 
-class CameraScannerView: UIView, AVCaptureMetadataOutputObjectsDelegate, AVCapturePhotoCaptureDelegate {
-    var captureSession: AVCaptureSession!
-    var previewLayer: AVCaptureVideoPreviewLayer!
-    var delegate: AVCaptureMetadataOutputObjectsDelegate?
-    var photoOutput: AVCapturePhotoOutput!
-    var completionHandler: ((UIImage?) -> Void)?
+class CameraScannerView: UIView, AVCapturePhotoCaptureDelegate {
+    private var captureSession: AVCaptureSession!
+    private var previewLayer: AVCaptureVideoPreviewLayer!
+    private var photoOutput: AVCapturePhotoOutput!
+    private var completionHandler: ((UIImage?) -> Void)?
     
-    var isCameraActive: Bool = true {
-        didSet {
-            if isCameraActive != oldValue {
-                DispatchQueue.global(qos: .userInitiated).async {
-                    if self.isCameraActive {
-                        self.captureSession.startRunning()
-                    } else {
-                        self.captureSession.stopRunning()
-                    }
-                }
-            }
+    private var isCameraActiveInternal = false
+    var isCameraActive: Bool {
+        get { isCameraActiveInternal }
+        set {
+            isCameraActiveInternal = newValue
+            updateCameraState()
         }
     }
     
@@ -198,7 +193,9 @@ class CameraScannerView: UIView, AVCaptureMetadataOutputObjectsDelegate, AVCaptu
     private func setupCaptureSession() {
         captureSession = AVCaptureSession()
         
-        DispatchQueue.global(qos: .userInitiated).async {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            
             guard let videoCaptureDevice = AVCaptureDevice.default(for: .video) else { return }
             let videoInput: AVCaptureDeviceInput
             
@@ -214,17 +211,6 @@ class CameraScannerView: UIView, AVCaptureMetadataOutputObjectsDelegate, AVCaptu
                 return
             }
             
-            let metadataOutput = AVCaptureMetadataOutput()
-            
-            if (self.captureSession.canAddOutput(metadataOutput)) {
-                self.captureSession.addOutput(metadataOutput)
-                
-                metadataOutput.setMetadataObjectsDelegate(self, queue: DispatchQueue.main)
-                metadataOutput.metadataObjectTypes = [.ean8, .ean13]
-            } else {
-                return
-            }
-            
             self.photoOutput = AVCapturePhotoOutput()
             if self.captureSession.canAddOutput(self.photoOutput) {
                 self.captureSession.addOutput(self.photoOutput)
@@ -236,32 +222,40 @@ class CameraScannerView: UIView, AVCaptureMetadataOutputObjectsDelegate, AVCaptu
                 self.previewLayer.videoGravity = .resizeAspectFill
                 self.layer.addSublayer(self.previewLayer)
                 
-                self.captureSession.startRunning()
+                self.updateCameraState()
             }
         }
     }
     
-    func metadataOutput(_ output: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {
-        delegate?.metadataOutput?(output, didOutput: metadataObjects, from: connection)
+    private func updateCameraState() {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            if self.isCameraActiveInternal {
+                if !self.captureSession.isRunning {
+                    self.captureSession.startRunning()
+                    print("Capture session started")
+                }
+            } else {
+                if self.captureSession.isRunning {
+                    self.captureSession.stopRunning()
+                    print("Capture session stopped")
+                }
+            }
+        }
     }
     
     func captureImage(completion: @escaping (UIImage?) -> Void) {
-        guard let photoOutput = self.photoOutput else {
-            print("photoOutput is nil")
-            completion(nil)
-            return
-        }
-
         guard captureSession.isRunning else {
             print("Capture session is not running")
             completion(nil)
             return
         }
 
-        let settings = AVCapturePhotoSettings()
-        print("Capturing photo with settings: \(settings)")
-        photoOutput.capturePhoto(with: settings, delegate: self)
         self.completionHandler = completion
+
+        let settings = AVCapturePhotoSettings()
+        print("Capturing photo...")
+        photoOutput.capturePhoto(with: settings, delegate: self)
     }
     
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
@@ -278,17 +272,13 @@ class CameraScannerView: UIView, AVCaptureMetadataOutputObjectsDelegate, AVCaptu
             return
         }
         
-        print("Photo captured successfully. Image size: \(image.size)")
+        print("Photo captured successfully")
         DispatchQueue.main.async { [weak self] in
             self?.completionHandler?(image)
         }
     }
 
-    func startCaptureSession() {
-        if !captureSession.isRunning {
-            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-                self?.captureSession.startRunning()
-            }
-        }
+    func reset() {
+        isCameraActive = true
     }
 }
