@@ -26,9 +26,8 @@ struct ContentView: View {
         NavigationView {
             VStack(spacing: 0) {
                 // Search bar
-                TextField("Search books", text: $searchText)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding()
+                SearchBar(text: $searchText)
+                    .padding(.bottom)
                 
                 // Main content area
                 GeometryReader { geometry in
