@@ -4,6 +4,8 @@ import Combine
 class BookManager: ObservableObject {
     @Published var books: [Book] = []
     @Published var readingListBooks: [Book] = []
+    @Published var dataCleared = false
+    
     private var storageManager: StorageManager
     
     init(storageManager: StorageManager) {
@@ -18,6 +20,7 @@ class BookManager: ObservableObject {
                 case .success(let fetchedBooks):
                     self.books = fetchedBooks
                     self.readingListBooks = fetchedBooks.filter { $0.isInReadingList }
+                    self.dataCleared = false
                 case .failure(let error):
                     print("Failed to fetch books: \(error.localizedDescription)")
                 }
@@ -69,6 +72,9 @@ class BookManager: ObservableObject {
 
     func reinitialize(with storageManager: StorageManager) {
         self.storageManager = storageManager
+        self.books = []
+        self.readingListBooks = []
+        self.dataCleared = true
         loadBooks()
     }
 }

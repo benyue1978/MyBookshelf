@@ -72,7 +72,6 @@ struct SettingsView: View {
                 case .success:
                     self.shelfManager.reinitialize(with: storageManager)
                     self.bookManager.reinitialize(with: storageManager)
-                    self.onDataCleared()
                     print("All data cleared successfully")
                 case .failure(let error):
                     print("Error clearing data: \(error.localizedDescription)")

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import Combine
 
 struct ContentView: View {
     @EnvironmentObject var shelfManager: ShelfManager
@@ -17,6 +18,7 @@ struct ContentView: View {
     @State private var showingScanner = false
     @State private var showingAddBook = false
     @State private var shelfUpdateTrigger = false  // 新增：用于触发更新的状态
+    @State private var cancellables = Set<AnyCancellable>()
 
     var body: some View {
         NavigationView {
@@ -94,25 +96,21 @@ struct ContentView: View {
         }
         .environmentObject(shelfManager)
         .onAppear {
+            setupDataClearedObserver()
             bookManager.loadBooks()
             shelfManager.loadShelves()
         }
     }
-    
-    private func clearCoreDataForTesting() {
-        let storageManager = StorageManager(inMemory: true)
-        storageManager.clearAllData { result in
-            switch result {
-            case .success:
-                // 重新初始化 ShelfManager 和 BookManager
-                shelfManager.reinitialize(with: storageManager)
-                bookManager.reinitialize(with: storageManager)
-            case .failure(let error):
-                print("Failed to clear Core Data: \(error)")
+
+    private func setupDataClearedObserver() {
+        Publishers.CombineLatest(shelfManager.$dataCleared, bookManager.$dataCleared)
+            .filter { $0 || $1 }
+            .sink { _ in
+                self.loadData()
             }
-        }
+            .store(in: &cancellables)
     }
-    
+
     private func loadData() {
         shelfManager.loadShelves()
         bookManager.loadBooks()
