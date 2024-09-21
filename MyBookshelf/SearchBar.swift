@@ -10,6 +10,7 @@ struct SearchBar: View {
             
             TextField("Search books", text: $text)
                 .foregroundColor(.primary)
+                .accessibilityIdentifier("SearchBarTextField")
             
             if !text.isEmpty {
                 Button(action: {
@@ -18,6 +19,7 @@ struct SearchBar: View {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundColor(.secondary)
                 }
+                .accessibilityIdentifier("ClearSearchButton")
             }
         }
         .padding(EdgeInsets(top: 8, leading: 6, bottom: 8, trailing: 6))

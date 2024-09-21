@@ -40,42 +40,42 @@ struct BookView: View {
                         Spacer()
                         TextField("", text: $book.title)
                             .multilineTextAlignment(.trailing)
-                            .accessibilityIdentifier("Title")
+                            .accessibilityIdentifier("BookTitleField")
                     }
                     HStack {
                         Text("Author")
                         Spacer()
                         TextField("", text: $book.author)
                             .multilineTextAlignment(.trailing)
-                            .accessibilityIdentifier("Author")
+                            .accessibilityIdentifier("BookAuthorField")
                     }
                     HStack {
                         Text("Publisher")
                         Spacer()
                         TextField("", text: $book.publisher)
                             .multilineTextAlignment(.trailing)
-                            .accessibilityIdentifier("Publisher")
+                            .accessibilityIdentifier("BookPublisherField")
                     }
                     HStack {
                         Text("Publish Date")
                         Spacer()
                         TextField("", text: $book.publishDate)
                             .multilineTextAlignment(.trailing)
-                            .accessibilityIdentifier("Publish Date")
+                            .accessibilityIdentifier("BookPublishDateField")
                     }
                     HStack {
                         Text("ISBN-13")
                         Spacer()
                         TextField("", text: $book.isbn13)
                             .multilineTextAlignment(.trailing)
-                            .accessibilityIdentifier("ISBN-13")
+                            .accessibilityIdentifier("BookISBN13Field")
                     }
                     HStack {
                         Text("ISBN-10")
                         Spacer()
                         TextField("", text: $book.isbn10)
                             .multilineTextAlignment(.trailing)
-                            .accessibilityIdentifier("ISBN-10")
+                            .accessibilityIdentifier("BookISBN10Field")
                     }
                 }
                 
@@ -88,7 +88,7 @@ struct BookView: View {
                     }
                     .accessibilityIdentifier("ShelfPicker")
                 }
-                
+
                 Toggle("Add to Reading List", isOn: $book.isInReadingList)
                     .accessibilityIdentifier("ReadingListToggle")
             }
