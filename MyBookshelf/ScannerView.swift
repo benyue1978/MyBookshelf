@@ -81,30 +81,25 @@ struct ScannerView: View {
             })
         }
         .sheet(isPresented: $showingBookView) {
-            if let capturedImage = capturedImage, let imageData = capturedImage.jpegData(compressionQuality: 0.8) {
-                BookView(book: Book(id: UUID(), 
-                                    title: "", 
-                                    author: "", 
-                                    isbn13: scannedCode.count == 13 ? scannedCode : "", 
-                                    isbn10: scannedCode.count == 10 ? scannedCode : "", 
-                                    publisher: "", 
-                                    publishDate: "", 
-                                    coverImage: imageData, 
-                                    shelfUuid: nil, 
-                                    isInReadingList: false), 
-                         isPresented: $showingBookView)
-            } else {
-                BookView(book: Book(id: UUID(), 
-                                    title: "", 
-                                    author: "", 
-                                    isbn13: scannedCode.count == 13 ? scannedCode : "", 
-                                    isbn10: scannedCode.count == 10 ? scannedCode : "", 
-                                    publisher: "", 
-                                    publishDate: "", 
-                                    coverImage: nil, 
-                                    shelfUuid: nil, 
-                                    isInReadingList: false), 
-                         isPresented: $showingBookView)
+            let coverImage = capturedImage?.jpegData(compressionQuality: 0.8)
+            let newBook = Book(
+                id: UUID(),
+                title: "",
+                author: "",
+                isbn13: scannedCode.count == 13 ? scannedCode : "",
+                isbn10: scannedCode.count == 10 ? scannedCode : "",
+                publisher: "",
+                publishDate: "",
+                coverImage: coverImage,
+                shelfUuid: nil,
+                isInReadingList: false
+            )
+            
+            BookView(book: newBook, isPresented: $showingBookView) {
+                showingBookView = false
+                isCameraActive = true
+                capturedImage = nil
+                scannedCode = ""
             }
         }
         .alert(item: $alertItem) { alertItem in

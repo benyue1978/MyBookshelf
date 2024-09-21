@@ -89,8 +89,10 @@ class CoreDataManager {
         
         do {
             let bookEntities = try context.fetch(fetchRequest)
-            let books = bookEntities.map { entity in
-                Book(title: entity.title ?? "",
+            let books = bookEntities.compactMap { entity -> Book? in
+                guard let id = entity.id else { return nil }
+                return Book(id:id,
+                     title: entity.title ?? "",
                      author: entity.author ?? "",
                      isbn13: entity.isbn13 ?? "",
                      isbn10: entity.isbn10 ?? "",
@@ -133,23 +135,25 @@ class CoreDataManager {
         }
     }
     
-    func addBook(_ book: Book, completion: @escaping (Result<Void, Error>) -> Void) {
+    func saveBook(_ book: Book, completion: @escaping (Result<Void, Error>) -> Void) {
         let context = persistentContainer.viewContext
         
-        // 使用 book.id 作为查找条件，检查是否已存在相同 ID 的书
         let fetchRequest: NSFetchRequest<BookEntity> = BookEntity.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "id == %@", book.id as CVarArg)
         
         do {
             let existingBooks = try context.fetch(fetchRequest)
+            let bookEntity: BookEntity
             if let existingBook = existingBooks.first {
-                // 如果找到相同 ID 的书，更新它
-                updateBookEntity(existingBook, with: book)
+                // 更新现有书籍
+                bookEntity = existingBook
             } else {
-                // 如果没有找到，创建新的 BookEntity
-                let newBook = BookEntity(context: context)
-                updateBookEntity(newBook, with: book)
+                // 创建新书籍
+                bookEntity = BookEntity(context: context)
+                bookEntity.id = book.id
             }
+            
+            updateBookEntity(bookEntity, with: book)
             
             try context.save()
             completion(.success(()))
@@ -159,7 +163,6 @@ class CoreDataManager {
     }
 
     private func updateBookEntity(_ entity: BookEntity, with book: Book) {
-        // 注意：我们不再尝试设置 id
         entity.title = book.title
         entity.author = book.author
         entity.isbn13 = book.isbn13
@@ -169,34 +172,6 @@ class CoreDataManager {
         entity.coverImage = book.coverImage
         entity.shelfUuid = book.shelfUuid
         entity.isInReadingList = book.isInReadingList
-    }
-    
-    func updateBook(_ book: Book, completion: @escaping (Result<Void, Error>) -> Void) {
-        let context = persistentContainer.viewContext
-        let fetchRequest: NSFetchRequest<BookEntity> = BookEntity.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "id == %@", book.id as CVarArg)
-        
-        do {
-            let results = try context.fetch(fetchRequest)
-            if let bookToUpdate = results.first {
-                bookToUpdate.title = book.title
-                bookToUpdate.author = book.author
-                bookToUpdate.isbn13 = book.isbn13
-                bookToUpdate.isbn10 = book.isbn10
-                bookToUpdate.publisher = book.publisher
-                bookToUpdate.publishDate = book.publishDate
-                bookToUpdate.coverImage = book.coverImage
-                bookToUpdate.shelfUuid = book.shelfUuid
-                bookToUpdate.isInReadingList = book.isInReadingList
-                
-                try context.save()
-                completion(.success(()))
-            } else {
-                completion(.failure(NSError(domain: "com.myapp", code: 404, userInfo: [NSLocalizedDescriptionKey: "Book not found"])))
-            }
-        } catch {
-            completion(.failure(error))
-        }
     }
     
     func deleteBook(_ book: Book, completion: @escaping (Result<Void, Error>) -> Void) {

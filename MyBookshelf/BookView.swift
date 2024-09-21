@@ -105,21 +105,28 @@ struct BookView: View {
     }
     
     private func saveBook() {
-        book.shelfUuid = selectedShelf
+        var updatedBook = book
+        updatedBook.shelfUuid = selectedShelf
         if let selectedShelf = selectedShelf {
             lastSelectedShelf = selectedShelf.uuidString
         } else {
             lastSelectedShelf = nil
         }
         
-        bookManager.addBook(book) { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success:
-                    dismissView()
-                case .failure(let error):
-                    self.alertItem = AlertItem(title: "Error", message: "Failed to save book: \(error.localizedDescription)")
-                }
+        bookManager.saveBook(updatedBook) { result in
+            handleSaveResult(result)
+        }
+        dismissView()
+    }
+
+    private func handleSaveResult(_ result: Result<Void, Error>) {
+        DispatchQueue.main.async {
+            switch result {
+            case .success:
+                isPresented = false
+                onDismiss?()
+            case .failure(let error):
+                self.alertItem = AlertItem(title: "Error", message: "Failed to save book: \(error.localizedDescription)")
             }
         }
     }

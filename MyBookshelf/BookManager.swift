@@ -29,23 +29,8 @@ class BookManager: ObservableObject {
         }
     }
     
-    func addBook(_ book: Book, completion: @escaping (Result<Void, Error>) -> Void) {
-        storageManager.addBook(book) { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success:
-                    self.loadBooks()
-                    self.dataChanged = true
-                    completion(.success(()))
-                case .failure(let error):
-                    completion(.failure(error))
-                }
-            }
-        }
-    }
-    
-    func updateBook(_ book: Book, completion: @escaping (Result<Void, Error>) -> Void) {
-        storageManager.updateBook(book) { result in
+    func saveBook(_ book: Book, completion: @escaping (Result<Void, Error>) -> Void) {
+        storageManager.saveBook(book) { result in
             DispatchQueue.main.async {
                 switch result {
                 case .success:

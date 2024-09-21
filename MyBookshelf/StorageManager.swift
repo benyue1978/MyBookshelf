@@ -28,12 +28,8 @@ class StorageManager: ObservableObject {
         coreDataManager.fetchBooks(completion: completion)
     }
 
-    func addBook(_ book: Book, completion: @escaping (Result<Void, Error>) -> Void) {
-        coreDataManager.addBook(book, completion: completion)
-    }
-
-    func updateBook(_ book: Book, completion: @escaping (Result<Void, Error>) -> Void) {
-        coreDataManager.updateBook(book, completion: completion)
+    func saveBook(_ book: Book, completion: @escaping (Result<Void, Error>) -> Void) {
+        coreDataManager.saveBook(book, completion: completion)
     }
 
     func deleteBook(_ book: Book, completion: @escaping (Result<Void, Error>) -> Void) {
