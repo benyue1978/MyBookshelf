@@ -128,10 +128,15 @@ struct ContentView: View {
                 ShelfListView(isPresented: $showingShelfListView)
             }
             .fullScreenCover(isPresented: $showingAddBook) {
-                BookView(book: Book(id: UUID(), title: "", author: "", isbn13: "", isbn10: "", publisher: "", publishDate: "", coverImageURL: nil, shelfUuid: nil, isInReadingList: false), isPresented: $showingAddBook)
+                BookView(book: Book(id: UUID(), title: "", author: "", isbn13: "", isbn10: "", publisher: "", publishDate: "", coverImage: nil, shelfUuid: nil, isInReadingList: false), isPresented: $showingAddBook)
             }
             .sheet(item: $selectedBook) { book in
-                BookView(book: book, isPresented: Binding.constant(true))
+                BookView(book: book, isPresented: Binding(
+                    get: { selectedBook != nil },
+                    set: { if !$0 { selectedBook = nil } }
+                ), onDismiss: {
+                    selectedBook = nil
+                })
             }
         }
         .environmentObject(shelfManager)
@@ -162,15 +167,14 @@ struct BookRow: View {
     
     var body: some View {
         HStack {
-            if let coverImageURL = book.coverImageURL, let url = URL(string: coverImageURL) {
-                AsyncImage(url: url) { image in
-                    image.resizable().aspectRatio(contentMode: .fit)
-                } placeholder: {
-                    Image(systemName: "book.fill")
-                }
-                .frame(width: 60, height: 90)
+            if let coverImageData = book.coverImage,
+                let coverImage = UIImage(data: coverImageData) {
+                    Image(uiImage: coverImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 60, height: 90)
             } else {
-                Image(systemName: "book.fill")
+                Image(systemName: "book")
                     .resizable()
                     .frame(width: 60, height: 90)
             }

@@ -8,11 +8,11 @@ struct Book: Identifiable, Codable {
     var isbn10: String
     var publisher: String
     var publishDate: String
-    var coverImageURL: String?
+    var coverImage: Data?  // 新增
     var shelfUuid: UUID?
     var isInReadingList: Bool
     
-    init(id: UUID = UUID(), title: String, author: String, isbn13: String, isbn10: String, publisher: String, publishDate: String, coverImageURL: String? = nil, shelfUuid: UUID? = nil, isInReadingList: Bool = false) {
+    init(id: UUID = UUID(), title: String, author: String, isbn13: String, isbn10: String, publisher: String, publishDate: String, coverImage: Data? = nil, shelfUuid: UUID? = nil, isInReadingList: Bool = false) {
         self.id = id
         self.title = title
         self.author = author
@@ -20,13 +20,13 @@ struct Book: Identifiable, Codable {
         self.isbn10 = isbn10
         self.publisher = publisher
         self.publishDate = publishDate
-        self.coverImageURL = coverImageURL
+        self.coverImage = coverImage
         self.shelfUuid = shelfUuid
         self.isInReadingList = isInReadingList
     }
     
     enum CodingKeys: String, CodingKey {
-        case title, author, isbn13, isbn10, publisher, publishDate, coverImageURL, shelfUuid, isInReadingList
+        case title, author, isbn13, isbn10, publisher, publishDate, coverImage, shelfUuid, isInReadingList
     }
     
     init(from decoder: Decoder) throws {
@@ -38,7 +38,7 @@ struct Book: Identifiable, Codable {
         isbn10 = try container.decode(String.self, forKey: .isbn10)
         publisher = try container.decode(String.self, forKey: .publisher)
         publishDate = try container.decode(String.self, forKey: .publishDate)
-        coverImageURL = try container.decodeIfPresent(String.self, forKey: .coverImageURL)
+        coverImage = try container.decodeIfPresent(Data.self, forKey: .coverImage)
         shelfUuid = try container.decodeIfPresent(UUID.self, forKey: .shelfUuid)
         isInReadingList = try container.decode(Bool.self, forKey: .isInReadingList)
     }

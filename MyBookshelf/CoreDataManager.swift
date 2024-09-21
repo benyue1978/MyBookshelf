@@ -96,7 +96,7 @@ class CoreDataManager {
                      isbn10: entity.isbn10 ?? "",
                      publisher: entity.publisher ?? "",
                      publishDate: entity.publishDate ?? "",
-                     coverImageURL: entity.coverImageURL ?? "",
+                     coverImage: entity.coverImage ?? nil,
                      shelfUuid: entity.shelfUuid ?? nil,
                      isInReadingList: entity.isInReadingList)
             }
@@ -166,7 +166,7 @@ class CoreDataManager {
         entity.isbn10 = book.isbn10
         entity.publisher = book.publisher
         entity.publishDate = book.publishDate
-        entity.coverImageURL = book.coverImageURL
+        entity.coverImage = book.coverImage
         entity.shelfUuid = book.shelfUuid
         entity.isInReadingList = book.isInReadingList
     }
@@ -185,7 +185,7 @@ class CoreDataManager {
                 bookToUpdate.isbn10 = book.isbn10
                 bookToUpdate.publisher = book.publisher
                 bookToUpdate.publishDate = book.publishDate
-                bookToUpdate.coverImageURL = book.coverImageURL
+                bookToUpdate.coverImage = book.coverImage
                 bookToUpdate.shelfUuid = book.shelfUuid
                 bookToUpdate.isInReadingList = book.isInReadingList
                 

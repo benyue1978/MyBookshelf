@@ -4,43 +4,22 @@ struct BookView: View {
     @EnvironmentObject var bookManager: BookManager
     @EnvironmentObject var shelfManager: ShelfManager
     @Binding var isPresented: Bool
+    @Environment(\.presentationMode) var presentationMode
     @State private var book: Book
     @State private var coverImage: UIImage?
-    @State private var isNewImage: Bool
     @AppStorage("lastSelectedShelf") private var lastSelectedShelf: String?
     @State private var selectedShelf: UUID?
     @State private var alertItem: AlertItem?
     @State private var isLoading = false
 
-    init(book: Book, isPresented: Binding<Bool>, isNewImage: Bool = false) {
+    var onDismiss: (() -> Void)?
+
+    init(book: Book, isPresented: Binding<Bool>, onDismiss: (() -> Void)? = nil) {
         self._book = State(initialValue: book)
         self._isPresented = isPresented
-        self._isNewImage = State(initialValue: isNewImage)
-    }
-
-    init(book: Book, coverImage: UIImage?, isPresented: Binding<Bool>) {
-        self._book = State(initialValue: book)
-        self._coverImage = State(initialValue: coverImage)
-        self._isPresented = isPresented
-        self._isNewImage = State(initialValue: true)
-        
-        print("BookView initialized with book: \(book.title)")
-        print("Cover image received: \(coverImage != nil)")
-        if let image = coverImage {
-            print("Received image size: \(image.size)")
-        }
-    }
-
-    init(isbn: String, coverImage: UIImage?, isPresented: Binding<Bool>) {
-        self._book = State(initialValue: Book(id: UUID(), title: "", author: "", isbn13: isbn.count == 13 ? isbn : "", isbn10: isbn.count == 10 ? isbn : "", publisher: "", publishDate: "", coverImageURL: nil, shelfUuid: nil, isInReadingList: false))
-        self._coverImage = State(initialValue: coverImage)
-        self._isPresented = isPresented
-        self._isNewImage = State(initialValue: true)
-        
-        print("BookView initialized with ISBN: \(isbn)")
-        print("Cover image received: \(coverImage != nil)")
-        if let image = coverImage {
-            print("Received image size: \(image.size)")
+        self.onDismiss = onDismiss
+        if let coverImageData = book.coverImage {
+            self._coverImage = State(initialValue: UIImage(data: coverImageData))
         }
     }
 
@@ -48,18 +27,11 @@ struct BookView: View {
         NavigationView {
             Form {
                 Section(header: Text("Book Information")) {
-                    if let coverImage = coverImage, isNewImage {
+                    if let coverImage = coverImage {
                         Image(uiImage: coverImage)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
                             .frame(height: 200)
-                    } else if let coverImageURL = book.coverImageURL, let url = URL(string: coverImageURL) {
-                        AsyncImage(url: url) { image in
-                            image.resizable().aspectRatio(contentMode: .fit)
-                        } placeholder: {
-                            ProgressView()
-                        }
-                        .frame(height: 200)
                     } else {
                         Image(systemName: "book")
                             .resizable()
@@ -89,7 +61,7 @@ struct BookView: View {
             }
             .navigationTitle("Book Details")
             .navigationBarItems(leading: Button("Cancel") {
-                isPresented = false
+                dismissView()
             }, trailing: Button(action: saveBook) {
                 Image(systemName: "checkmark")
             }
@@ -99,10 +71,6 @@ struct BookView: View {
             .onAppear {
                 shelfManager.loadShelves()
                 loadLastSelectedShelf()
-                if !isNewImage {
-                    loadExistingCoverImage()
-                }
-                print("BookView appeared, coverImage: \(coverImage != nil)")
             }
         }
     }
@@ -144,26 +112,11 @@ struct BookView: View {
             lastSelectedShelf = nil
         }
         
-        if let coverImage = coverImage, isNewImage {
-            if let imageData = coverImage.jpegData(compressionQuality: 0.8) {
-                if let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
-                    let fileName = "\(book.id).jpg"
-                    let fileURL = documentsDirectory.appendingPathComponent(fileName)
-                    do {
-                        try imageData.write(to: fileURL)
-                        book.coverImageURL = fileURL.absoluteString
-                    } catch {
-                        print("Error saving image: \(error)")
-                    }
-                }
-            }
-        }
-        
         bookManager.addBook(book) { result in
             DispatchQueue.main.async {
                 switch result {
                 case .success:
-                    isPresented = false
+                    dismissView()
                 case .failure(let error):
                     self.alertItem = AlertItem(title: "Error", message: "Failed to save book: \(error.localizedDescription)")
                 }
@@ -171,34 +124,10 @@ struct BookView: View {
         }
     }
 
-    private func loadExistingCoverImage() {
-        if let coverImageURL = book.coverImageURL {
-            if coverImageURL.starts(with: "/") {
-                // 这是一个本地文件路径
-                if let image = UIImage(contentsOfFile: coverImageURL) {
-                    self.coverImage = image
-                } else {
-                    print("Failed to load image from local file: \(coverImageURL)")
-                }
-            } else if let url = URL(string: coverImageURL) {
-                // 这是一个网络 URL
-                URLSession.shared.dataTask(with: url) { data, _, error in
-                    if let error = error {
-                        print("Error loading image from URL: \(error.localizedDescription)")
-                        return
-                    }
-                    if let data = data, let image = UIImage(data: data) {
-                        DispatchQueue.main.async {
-                            self.coverImage = image
-                        }
-                    } else {
-                        print("Failed to create image from data")
-                    }
-                }.resume()
-            } else {
-                print("Invalid cover image URL: \(coverImageURL)")
-            }
-        }
+    private func dismissView() {
+        isPresented = false
+        presentationMode.wrappedValue.dismiss()
+        onDismiss?()
     }
 }
 
