@@ -118,18 +118,18 @@ class CoreDataManager {
 
     func clearAllData(completion: @escaping (Result<Void, Error>) -> Void) {
         let context = persistentContainer.viewContext
-        let entityNames = ["ShelfEntity", "BookEntity"] // 添加所有你的实体名称
+        let entityNames = ["ShelfEntity", "BookEntity"]
         
-        for entityName in entityNames {
-            let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: entityName)
-            let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
-            
-            do {
+        do {
+            for entityName in entityNames {
+                let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: entityName)
+                let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
                 try context.execute(deleteRequest)
-                try context.save()
-            } catch {
-                print("Error clearing \(entityName): \(error)")
             }
+            try context.save()
+            completion(.success(()))
+        } catch {
+            completion(.failure(error))
         }
     }
     

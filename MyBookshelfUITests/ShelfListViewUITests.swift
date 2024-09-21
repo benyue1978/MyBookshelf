@@ -94,6 +94,37 @@ class ShelfListViewUITests: XCTestCase {
         XCTAssertFalse(app.buttons[shelfToDelete].exists)
     }
 
+    func testClearAllData() throws {
+        // 添加一个新书架
+        let newShelfName = "Test Shelf for Clearing"
+        addShelf(name: newShelfName)
+        
+        // 验证新书架是否被添加
+        XCTAssertTrue(app.staticTexts[newShelfName].exists, "New shelf should exist before clearing data")
+        
+        // 清除所有数据
+        clearCoreData()
+        
+        // 验证书架已经从 ContentView 删除
+        XCTAssertFalse(app.staticTexts[newShelfName].exists, "Shelf should not exist after clearing data")
+        
+        // 验证书架列表是否为空
+        app.buttons["Shelves"].tap() // 打开书架列表视图
+        
+        // 等待一段时间以确保视图已更新
+        let emptyListIndicator = app.textFields["Add Shelf"]
+        XCTAssertTrue(emptyListIndicator.waitForExistence(timeout: 5), "Empty list indicator should appear after clearing data")
+        
+        // 验证之前添加的书架不再存在
+        XCTAssertFalse(app.staticTexts[newShelfName].exists, "Shelf should not exist after clearing data")
+        
+        app.buttons["Back"].tap()
+        
+        app.buttons["Add Book"].tap()
+        app.descendants(matching: .any)["ShelfPicker"].firstMatch.tap()
+        XCTAssertFalse(app.buttons[newShelfName].exists)
+    }
+
     // 辅助方法：添加书架
     private func addShelf(name: String) {
         // 打开 ShelfListView

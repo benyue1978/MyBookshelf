@@ -2,7 +2,10 @@ import SwiftUI
 
 struct SettingsView: View {
     @Binding var isPresented: Bool
+    var onDataCleared: () -> Void
     @EnvironmentObject var storageManager: StorageManager
+    @EnvironmentObject var shelfManager: ShelfManager
+    @EnvironmentObject var bookManager: BookManager
     @State private var showingExportSheet = false
     @State private var showingImportSheet = false
     @State private var showingClearDataAlert = false
@@ -62,13 +65,18 @@ struct SettingsView: View {
     }
 
     private func clearAllData() {
-        let storageManager = StorageManager(inMemory: false)  // 使用持久化存储
+        let storageManager = StorageManager(inMemory: false)
         storageManager.clearAllData { result in
-            switch result {
-            case .success:
-                print("All data cleared successfully")
-            case .failure(let error):
-                print("Error clearing data: \(error.localizedDescription)")
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    self.shelfManager.reinitialize(with: storageManager)
+                    self.bookManager.reinitialize(with: storageManager)
+                    self.onDataCleared()
+                    print("All data cleared successfully")
+                case .failure(let error):
+                    print("Error clearing data: \(error.localizedDescription)")
+                }
             }
         }
     }

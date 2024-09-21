@@ -80,7 +80,7 @@ struct ContentView: View {
                 }
             }
             .fullScreenCover(isPresented: $showingSettings) {
-                SettingsView(isPresented: $showingSettings)
+                SettingsView(isPresented: $showingSettings, onDataCleared: loadData)
             }
             .fullScreenCover(isPresented: $showingShelfListView) {
                 ShelfListView(isPresented: $showingShelfListView, updateTrigger: $shelfUpdateTrigger)
