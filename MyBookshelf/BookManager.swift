@@ -66,4 +66,8 @@ class BookManager: ObservableObject {
         self.dataChanged = true
         loadBooks()
     }
+
+    func findBook(byISBN isbn: String) -> Book? {
+        return books.first { $0.isbn13 == isbn || $0.isbn10 == isbn }
+    }
 }

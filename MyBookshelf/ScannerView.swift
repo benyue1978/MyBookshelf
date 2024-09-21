@@ -2,20 +2,19 @@ import SwiftUI
 import AVFoundation
 
 struct ScannerView: View {
+    @EnvironmentObject var bookManager: BookManager
     @Environment(\.presentationMode) var presentationMode
-    @EnvironmentObject var storageManager: StorageManager
-    @State private var scannedCode: String = ""
+    @State private var scannedCode = ""
     @State private var alertItem: AlertItem?
     @State private var isCameraActive = true
     @State private var capturedImage: UIImage?
-    @State private var showingBookView = false
     @State private var isCapturing = false
     @State private var isResetting = false
     @State private var fetchedBook: Book?
     @State private var isFetchingBookInfo = false
     @State private var fetchError: String?
-    @State private var isSearchingISBN = false
-    
+    @State private var showingBookView = false
+
     var body: some View {
         NavigationView {
             GeometryReader { geometry in
@@ -128,24 +127,8 @@ struct ScannerView: View {
             })
         }
         .sheet(isPresented: $showingBookView) {
-            if let fetchedBook = fetchedBook {
-                BookView(book: fetchedBook, isPresented: $showingBookView) {
-                    resetScannerState()
-                }
-            } else if let capturedImage = capturedImage {
-                let newBook = Book(
-                    id: UUID(),
-                    title: "",
-                    author: "",
-                    isbn13: scannedCode,
-                    isbn10: "",
-                    publisher: "",
-                    publishDate: "",
-                    coverImage: capturedImage.jpegData(compressionQuality: 0.8)
-                )
-                BookView(book: newBook, isPresented: $showingBookView) {
-                    resetScannerState()
-                }
+            if let book = fetchedBook {
+                BookView(book: book, isPresented: $showingBookView)
             }
         }
     }
@@ -202,8 +185,12 @@ struct ScannerView: View {
                 publishDate: "",
                 coverImage: image.jpegData(compressionQuality: 0.8)
             )
+        } else if let existingBook = bookManager.findBook(byISBN: scannedCode) {
+                // 如果在本地找到了书，直接打开 BookView
+                fetchedBook = existingBook
+                showingBookView = true
         } else {
-            // 如果识别到 ISBN，开始搜索
+            // 如果本地没有找到，则从网上搜索
             loadBookInfo()
         }
     }
