@@ -1,10 +1,10 @@
 import SwiftUI
+import Combine
 
 struct ShelfListView: View {
     @Binding var isPresented: Bool
     @Binding var updateTrigger: Bool
-    @EnvironmentObject var storageManager: StorageManager
-    @State private var shelves: [Shelf] = []
+    @EnvironmentObject var shelfManager: ShelfManager
     @State private var newShelfName = ""
     @State private var isLoading = false
     @State private var alertItem: AlertItem?
@@ -17,7 +17,7 @@ struct ShelfListView: View {
                 if isLoading {
                     ProgressView()
                 } else {
-                    ForEach(shelves) { shelf in
+                    ForEach(shelfManager.shelves) { shelf in
                         if editingShelfId == shelf.id {
                             HStack {
                                 TextField("Shelf Name", text: $editingShelfName)
@@ -75,29 +75,16 @@ struct ShelfListView: View {
     
     private func loadShelves() {
         isLoading = true
-        storageManager.fetchShelves { result in
-            DispatchQueue.main.async {
-                isLoading = false
-                switch result {
-                case .success(let fetchedShelves):
-                    self.shelves = fetchedShelves
-                case .failure(let error):
-                    self.alertItem = AlertItem(
-                        title: "Error",
-                        message: "Failed to load shelves: \(error.localizedDescription)"
-                    )
-                }
-            }
-        }
+        shelfManager.loadShelves()
+        isLoading = false
     }
     
     private func addShelf() {
         guard !newShelfName.isEmpty else { return }
-        storageManager.addShelf(name: newShelfName) { result in
+        shelfManager.addShelf(name: newShelfName) { result in
             DispatchQueue.main.async {
                 switch result {
                 case .success:
-                    loadShelves()
                     newShelfName = ""
                 case .failure(let error):
                     self.alertItem = AlertItem(
@@ -111,11 +98,10 @@ struct ShelfListView: View {
     }
     
     private func updateShelf(_ shelf: Shelf, newName: String) {
-        storageManager.updateShelf(id: shelf.id, newName: newName) { result in
+        shelfManager.updateShelf(id: shelf.id, newName: newName) { result in
             DispatchQueue.main.async {
                 switch result {
                 case .success:
-                    loadShelves()
                     self.editingShelfId = nil
                 case .failure(let error):
                     self.alertItem = AlertItem(
@@ -129,13 +115,13 @@ struct ShelfListView: View {
     }
     
     private func deleteShelf(at offsets: IndexSet) {
-        guard let index = offsets.first, index < shelves.count else { return }
-        let shelfToDelete = shelves[index]
-        storageManager.deleteShelf(id: shelfToDelete.id) { result in
+        guard let index = offsets.first, index < shelfManager.shelves.count else { return }
+        let shelfToDelete = shelfManager.shelves[index]
+        shelfManager.deleteShelf(id: shelfToDelete.id) { result in
             DispatchQueue.main.async {
                 switch result {
                 case .success:
-                    loadShelves()
+                    break
                 case .failure(let error):
                     self.alertItem = AlertItem(
                         title: "Error",

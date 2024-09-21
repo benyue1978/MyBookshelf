@@ -9,10 +9,9 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @EnvironmentObject private var storageManager: StorageManager
-    @EnvironmentObject private var shelfManager: ShelfManager
+    @EnvironmentObject var shelfManager: ShelfManager
+    @EnvironmentObject var bookManager: BookManager
     @State private var searchText = ""
-    @State private var books: [Book] = []
     @State private var showingSettings = false
     @State private var showingShelfListView = false
     @State private var showingScanner = false
@@ -34,7 +33,7 @@ struct ContentView: View {
                 
                 ScrollView(.horizontal) {
                     HStack {
-                        ForEach(books.filter { $0.isInReadingList }) { book in
+                        ForEach(bookManager.readingListBooks) { book in
                             BookThumbnail(book: book)
                         }
                     }
@@ -93,24 +92,30 @@ struct ContentView: View {
                 BookView(book: Book(id: UUID(), title: "", author: "", isbn13: "", isbn10: "", publisher: "", publishDate: "", coverImageURL: nil, shelfUuid: nil, isInReadingList: false), isPresented: $showingAddBook)
             }
         }
-        .environmentObject(storageManager)
         .environmentObject(shelfManager)
         .onAppear {
-            loadData()
+            bookManager.loadBooks()
+            shelfManager.loadShelves()
+        }
+    }
+    
+    private func clearCoreDataForTesting() {
+        let storageManager = StorageManager(inMemory: true)
+        storageManager.clearAllData { result in
+            switch result {
+            case .success:
+                // 重新初始化 ShelfManager 和 BookManager
+                shelfManager.reinitialize(with: storageManager)
+                bookManager.reinitialize(with: storageManager)
+            case .failure(let error):
+                print("Failed to clear Core Data: \(error)")
+            }
         }
     }
     
     private func loadData() {
         shelfManager.loadShelves()
-        
-        storageManager.fetchBooks { result in
-            switch result {
-            case .success(let fetchedBooks):
-                self.books = fetchedBooks
-            case .failure(let error):
-                print("Error fetching books: \(error)")
-            }
-        }
+        bookManager.loadBooks()
     }
 }
 
@@ -154,10 +159,12 @@ struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         let storageManager = StorageManager()
         let shelfManager = ShelfManager(storageManager: storageManager)
+        let bookManager = BookManager(storageManager: storageManager)
         
         return ContentView()
             .environmentObject(storageManager)
             .environmentObject(shelfManager)
+            .environmentObject(bookManager)
     }
 }
 

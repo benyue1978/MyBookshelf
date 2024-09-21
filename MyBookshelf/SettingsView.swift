@@ -2,7 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Binding var isPresented: Bool
-    @ObservedObject var storageManager = StorageManager.shared
+    @EnvironmentObject var storageManager: StorageManager
     @State private var showingExportSheet = false
     @State private var showingImportSheet = false
     @State private var showingClearDataAlert = false
@@ -28,14 +28,14 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Back") {
+                    Button("Done") {
                         isPresented = false
                     }
                 }
             }
             .alert(isPresented: $showingClearDataAlert) {
                 Alert(
-                    title: Text("Clear All Data"),
+                    title: Text("Confirm"),
                     message: Text("Are you sure you want to clear all data? This action cannot be undone."),
                     primaryButton: .destructive(Text("Clear")) {
                         clearAllData()
@@ -60,8 +60,9 @@ struct SettingsView: View {
             }
         }
     }
-    
+
     private func clearAllData() {
+        let storageManager = StorageManager(inMemory: false)  // 使用持久化存储
         storageManager.clearAllData { result in
             switch result {
             case .success:

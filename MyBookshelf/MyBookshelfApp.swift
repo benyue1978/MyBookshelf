@@ -9,19 +9,27 @@ import SwiftUI
 
 @main
 struct MyBookshelfApp: App {
-    @StateObject private var storageManager = StorageManager()
     @StateObject private var shelfManager: ShelfManager
+    @StateObject private var bookManager: BookManager
     
     init() {
-        let storage = StorageManager()
-        _shelfManager = StateObject(wrappedValue: ShelfManager(storageManager: storage))
+        let storageManager: StorageManager
+        if CommandLine.arguments.contains("--uitesting") {
+            // 使用内存存储的 Core Data 堆栈
+            storageManager = StorageManager(inMemory: true)
+        } else {
+            storageManager = StorageManager()
+        }
+        
+        _shelfManager = StateObject(wrappedValue: ShelfManager(storageManager: storageManager))
+        _bookManager = StateObject(wrappedValue: BookManager(storageManager: storageManager))
     }
     
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environmentObject(storageManager)
                 .environmentObject(shelfManager)
+                .environmentObject(bookManager)
         }
     }
 }

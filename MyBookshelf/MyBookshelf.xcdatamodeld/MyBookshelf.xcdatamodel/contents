@@ -3,6 +3,7 @@
     <entity name="BookEntity" representedClassName="BookEntity" syncable="YES" codeGenerationType="class">
         <attribute name="author" optional="YES" attributeType="String"/>
         <attribute name="coverImageURL" optional="YES" attributeType="String"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="isbn10" optional="YES" attributeType="String"/>
         <attribute name="isbn13" optional="YES" attributeType="String"/>
         <attribute name="isInReadingList" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>

@@ -1,11 +1,12 @@
 import SwiftUI
 
 struct BookView: View {
-    @EnvironmentObject var storageManager: StorageManager
+    @EnvironmentObject var bookManager: BookManager
     @EnvironmentObject var shelfManager: ShelfManager
     @Binding var isPresented: Bool
     @State private var book: Book
     @State private var coverImage: UIImage?
+    @AppStorage("lastSelectedShelf") private var lastSelectedShelf: String?
     @State private var selectedShelf: UUID?
     @State private var alertItem: AlertItem?
     @State private var isLoading = false
@@ -80,13 +81,14 @@ struct BookView: View {
                     TextField("ISBN-10", text: $book.isbn10)
                 }
                 
-                Section(header: Text("Shelf")) {
-                    Picker("Shelf", selection: $selectedShelf) {
-                        Text("On Shelf").tag(UUID?.none)
+                Section(header: Text("ON Shelf")) {
+                    Picker("Select Shelf", selection: $selectedShelf) {
+                        Text("No Shelf").tag(UUID?.none)
                         ForEach(shelfManager.shelves) { shelf in
                             Text(shelf.name).tag(shelf.id as UUID?)
                         }
                     }
+                    .accessibilityIdentifier("ShelfPicker")
                 }
                 
                 Toggle("Add to Reading List", isOn: $book.isInReadingList)
@@ -99,8 +101,21 @@ struct BookView: View {
             })
             .onAppear {
                 shelfManager.loadShelves()
+                loadLastSelectedShelf()
                 print("BookView appeared, coverImage: \(coverImage != nil)")
             }
+        }
+    }
+
+    private func loadLastSelectedShelf() {
+        if book.shelfUuid == nil {
+            if let lastShelfId = lastSelectedShelf, let uuid = UUID(uuidString: lastShelfId) {
+                selectedShelf = uuid
+            } else {
+                selectedShelf = nil
+            }
+        } else {
+            selectedShelf = book.shelfUuid
         }
     }
 
@@ -123,6 +138,11 @@ struct BookView: View {
     
     private func saveBook() {
         book.shelfUuid = selectedShelf
+        if let selectedShelf = selectedShelf {
+            lastSelectedShelf = selectedShelf.uuidString
+        } else {
+            lastSelectedShelf = nil
+        }
         
         if let coverImage = coverImage, let imageData = coverImage.jpegData(compressionQuality: 0.8) {
             if let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
@@ -137,11 +157,10 @@ struct BookView: View {
             }
         }
         
-        storageManager.addBook(book) { result in
+        bookManager.addBook(book) { result in
             DispatchQueue.main.async {
                 switch result {
                 case .success:
-                    storageManager.objectWillChange.send()
                     isPresented = false
                 case .failure(let error):
                     self.alertItem = AlertItem(title: "Error", message: "Failed to save book: \(error.localizedDescription)")
