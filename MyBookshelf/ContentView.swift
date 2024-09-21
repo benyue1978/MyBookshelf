@@ -86,7 +86,7 @@ struct ContentView: View {
             .fullScreenCover(isPresented: $showingShelfListView) {
                 ShelfListView(isPresented: $showingShelfListView, updateTrigger: $shelfUpdateTrigger)
             }
-            .onChange(of: shelfUpdateTrigger) { _ in
+            .onChange(of: shelfUpdateTrigger) { _, _ in
                 shelfManager.loadShelves()
             }
             .fullScreenCover(isPresented: $showingAddBook) {
