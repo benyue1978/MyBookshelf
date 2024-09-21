@@ -11,6 +11,7 @@ struct BookView: View {
     @State private var selectedShelf: UUID?
     @State private var alertItem: AlertItem?
     @State private var isLoading = false
+    @State private var showingCamera = false
 
     var onDismiss: (() -> Void)?
 
@@ -27,17 +28,10 @@ struct BookView: View {
         NavigationView {
             Form {
                 Section(header: Text("Book Information")) {
-                    if let coverImage = coverImage {
-                        Image(uiImage: coverImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(height: 200)
-                    } else {
-                        Image(systemName: "book")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(height: 200)
-                    }
+                    CoverImageView(coverImage: book.coverImage != nil ? UIImage(data: book.coverImage!) : nil)
+                        .onTapGesture(count: 2) {
+                            showingCamera = true
+                        }
                     
                     HStack {
                         Text("Title")
@@ -102,6 +96,14 @@ struct BookView: View {
                 shelfManager.loadShelves()
                 loadLastSelectedShelf()
             }
+            .sheet(isPresented: $showingCamera) {
+                CameraView(image: $coverImage, onImageCaptured: { newImage in
+                    if let imageData = newImage.jpegData(compressionQuality: 0.8) {
+                        book.coverImage = imageData
+                        coverImage = newImage
+                    }
+                })
+            }
         }
     }
 
@@ -165,6 +167,26 @@ struct BookView: View {
         isPresented = false
         presentationMode.wrappedValue.dismiss()
         onDismiss?()
+    }
+}
+
+struct CoverImageView: View {
+    let coverImage: UIImage?
+    
+    var body: some View {
+        Group {
+            if let image = coverImage {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+            } else {
+                Image(systemName: "book")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .foregroundColor(.gray)
+            }
+        }
+        .frame(height: 200)
     }
 }
 
