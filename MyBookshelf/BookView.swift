@@ -39,12 +39,42 @@ struct BookView: View {
                             .frame(height: 200)
                     }
                     
-                    TextField("Title", text: $book.title)
-                    TextField("Author", text: $book.author)
-                    TextField("Publisher", text: $book.publisher)
-                    TextField("Publish Date", text: $book.publishDate)
-                    TextField("ISBN-13", text: $book.isbn13)
-                    TextField("ISBN-10", text: $book.isbn10)
+                    HStack {
+                        Text("Title")
+                        Spacer()
+                        TextField("", text: $book.title)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    HStack {
+                        Text("Author")
+                        Spacer()
+                        TextField("", text: $book.author)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    HStack {
+                        Text("Publisher")
+                        Spacer()
+                        TextField("", text: $book.publisher)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    HStack {
+                        Text("Publish Date")
+                        Spacer()
+                        TextField("", text: $book.publishDate)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    HStack {
+                        Text("ISBN-13")
+                        Spacer()
+                        TextField("", text: $book.isbn13)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    HStack {
+                        Text("ISBN-10")
+                        Spacer()
+                        TextField("", text: $book.isbn10)
+                            .multilineTextAlignment(.trailing)
+                    }
                 }
                 
                 Section(header: Text("ON Shelf")) {

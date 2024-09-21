@@ -164,31 +164,42 @@ struct ContentView: View {
 struct BookRow: View {
     let book: Book
     @EnvironmentObject var shelfManager: ShelfManager
+    @State private var showingBookView = false
     
     var body: some View {
-        HStack {
-            if let coverImageData = book.coverImage,
-                let coverImage = UIImage(data: coverImageData) {
+        Button(action: {
+            showingBookView = true
+        }) {
+            HStack {
+                if let coverImageData = book.coverImage,
+                   let coverImage = UIImage(data: coverImageData) {
                     Image(uiImage: coverImage)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 60, height: 90)
-            } else {
-                Image(systemName: "book")
-                    .resizable()
-                    .frame(width: 60, height: 90)
-            }
-            
-            VStack(alignment: .leading) {
-                Text(book.title)
-                    .font(.headline)
-                if let shelfUuid = book.shelfUuid,
-                   let shelf = shelfManager.shelves.first(where: { $0.id == shelfUuid }) {
-                    Text("Shelf: \(shelf.name)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                } else {
+                    Image(systemName: "book")
+                        .resizable()
+                        .frame(width: 60, height: 90)
                 }
+                
+                VStack(alignment: .leading) {
+                    Text(book.title)
+                        .font(.headline)
+                    if let shelfUuid = book.shelfUuid,
+                       let shelf = shelfManager.shelves.first(where: { $0.id == shelfUuid }) {
+                        Text("Shelf: \(shelf.name)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                Spacer()
             }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PlainButtonStyle())
+        .sheet(isPresented: $showingBookView) {
+            BookView(book: book, isPresented: $showingBookView)
         }
     }
 }
