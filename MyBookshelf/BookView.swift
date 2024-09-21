@@ -2,13 +2,25 @@ import SwiftUI
 
 struct BookView: View {
     @EnvironmentObject var storageManager: StorageManager
+    @EnvironmentObject var shelfManager: ShelfManager
     @Binding var isPresented: Bool
     @State private var book: Book
     @State private var coverImage: UIImage?
     @State private var selectedShelf: UUID?
-    @State private var shelves: [Shelf] = []
     @State private var alertItem: AlertItem?
     @State private var isLoading = false
+
+    init(book: Book, coverImage: UIImage? = nil, isPresented: Binding<Bool>) {
+        self._isPresented = isPresented
+        self._book = State(initialValue: book)
+        self._coverImage = State(initialValue: coverImage)
+        
+        print("BookView initialized with book: \(book.title)")
+        print("Cover image received: \(coverImage != nil)")
+        if let image = coverImage {
+            print("Received image size: \(image.size)")
+        }
+    }
 
     init(isbn: String, coverImage: UIImage?, isPresented: Binding<Bool>) {
         self._isPresented = isPresented
@@ -71,7 +83,7 @@ struct BookView: View {
                 Section(header: Text("Shelf")) {
                     Picker("Shelf", selection: $selectedShelf) {
                         Text("On Shelf").tag(UUID?.none)
-                        ForEach(shelves) { shelf in
+                        ForEach(shelfManager.shelves) { shelf in
                             Text(shelf.name).tag(shelf.id as UUID?)
                         }
                     }
@@ -85,16 +97,8 @@ struct BookView: View {
             }, trailing: Button(action: saveBook) {
                 Image(systemName: "checkmark")
             })
-            .onAppear(perform: loadBookInfo)
-            .alert(item: $alertItem) { item in
-                Alert(title: Text(item.title), message: Text(item.message), dismissButton: .default(Text("OK")))
-            }
-            .overlay(Group {
-                if isLoading {
-                    ProgressView()
-                }
-            })
             .onAppear {
+                shelfManager.loadShelves()
                 print("BookView appeared, coverImage: \(coverImage != nil)")
             }
         }
@@ -115,23 +119,8 @@ struct BookView: View {
                 }
             }
         }
-        
-        loadShelves()
     }
     
-    private func loadShelves() {
-        storageManager.fetchShelves { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let fetchedShelves):
-                    self.shelves = fetchedShelves
-                case .failure(let error):
-                    self.alertItem = AlertItem(title: "Error", message: "Failed to fetch shelves: \(error.localizedDescription)")
-                }
-            }
-        }
-    }
-
     private func saveBook() {
         book.shelfUuid = selectedShelf
         

@@ -1,7 +1,8 @@
 import SwiftUI
 
-struct ShelfView: View {
+struct ShelfListView: View {
     @Binding var isPresented: Bool
+    @Binding var updateTrigger: Bool
     @EnvironmentObject var storageManager: StorageManager
     @State private var shelves: [Shelf] = []
     @State private var newShelfName = ""
@@ -60,6 +61,7 @@ struct ShelfView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Back") {
+                        updateTrigger.toggle()  // 在关闭视图前触发更新
                         isPresented = false
                     }
                 }
@@ -105,6 +107,7 @@ struct ShelfView: View {
                 }
             }
         }
+        updateTrigger.toggle()  // 添加书架后触发更新
     }
     
     private func updateShelf(_ shelf: Shelf, newName: String) {
@@ -122,6 +125,7 @@ struct ShelfView: View {
                 }
             }
         }
+        updateTrigger.toggle()  // 更新书架后触发更新
     }
     
     private func deleteShelf(at offsets: IndexSet) {
@@ -140,5 +144,6 @@ struct ShelfView: View {
                 }
             }
         }
+        updateTrigger.toggle()  // 删除书架后触发更新
     }
 }

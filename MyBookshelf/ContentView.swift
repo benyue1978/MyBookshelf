@@ -9,19 +9,21 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @StateObject private var storageManager = StorageManager.shared
+    @EnvironmentObject private var storageManager: StorageManager
+    @EnvironmentObject private var shelfManager: ShelfManager
     @State private var searchText = ""
-    @State private var shelves: [Shelf] = []
     @State private var books: [Book] = []
     @State private var showingSettings = false
-    @State private var showingShelfView = false
+    @State private var showingShelfListView = false
     @State private var showingScanner = false
-    
+    @State private var showingAddBook = false
+    @State private var shelfUpdateTrigger = false  // 新增：用于触发更新的状态
+
     var body: some View {
         NavigationView {
             VStack {
                 // Search bar
-                TextField("Search Books", text: $searchText)
+                TextField("Search books", text: $searchText)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding()
                 
@@ -33,32 +35,14 @@ struct ContentView: View {
                 ScrollView(.horizontal) {
                     HStack {
                         ForEach(books.filter { $0.isInReadingList }) { book in
-                            VStack {
-                                if let coverImageURL = book.coverImageURL, let url = URL(string: coverImageURL) {
-                                    AsyncImage(url: url) { image in
-                                        image.resizable().aspectRatio(contentMode: .fit)
-                                    } placeholder: {
-                                        Image(systemName: "book.fill")
-                                    }
-                                    .frame(width: 100, height: 150)
-                                } else {
-                                    Image(systemName: "book.fill")
-                                        .resizable()
-                                        .frame(width: 100, height: 150)
-                                }
-                                Text(book.title)
-                                    .lineLimit(2)
-                                    .multilineTextAlignment(.center)
-                            }
-                            .frame(width: 120)
-                            .padding()
+                            BookThumbnail(book: book)
                         }
                     }
                 }
                 
                 // Shelves list
-                List(shelves) { shelf in
-                    NavigationLink(destination: ShelfView(isPresented: .constant(true))) {
+                List(shelfManager.shelves) { shelf in
+                    NavigationLink(destination: ShelfDetailView(shelf: shelf)) {
                         HStack {
                             Text(shelf.name)
                             Spacer()
@@ -70,11 +54,15 @@ struct ContentView: View {
                 
                 // Navigation buttons
                 HStack {
-                    Button("Shelf") {
-                        showingShelfView = true
+                    Button("Add Book") {
+                        showingAddBook = true
                     }
                     Spacer()
                     ScannerButton()
+                    Spacer()
+                    Button("Shelves") {
+                        showingShelfListView = true
+                    }
                     Spacer()
                     Button("Settings") {
                         showingSettings = true
@@ -95,25 +83,25 @@ struct ContentView: View {
             .fullScreenCover(isPresented: $showingSettings) {
                 SettingsView(isPresented: $showingSettings)
             }
-            .fullScreenCover(isPresented: $showingShelfView) {
-                ShelfView(isPresented: $showingShelfView)
+            .fullScreenCover(isPresented: $showingShelfListView) {
+                ShelfListView(isPresented: $showingShelfListView, updateTrigger: $shelfUpdateTrigger)
+            }
+            .onChange(of: shelfUpdateTrigger) { _ in
+                shelfManager.loadShelves()
+            }
+            .fullScreenCover(isPresented: $showingAddBook) {
+                BookView(book: Book(id: UUID(), title: "", author: "", isbn13: "", isbn10: "", publisher: "", publishDate: "", coverImageURL: nil, shelfUuid: nil, isInReadingList: false), isPresented: $showingAddBook)
             }
         }
         .environmentObject(storageManager)
+        .environmentObject(shelfManager)
         .onAppear {
             loadData()
         }
     }
     
     private func loadData() {
-        storageManager.fetchShelves { result in
-            switch result {
-            case .success(let fetchedShelves):
-                self.shelves = fetchedShelves
-            case .failure(let error):
-                print("Error fetching shelves: \(error)")
-            }
-        }
+        shelfManager.loadShelves()
         
         storageManager.fetchBooks { result in
             switch result {
@@ -123,6 +111,32 @@ struct ContentView: View {
                 print("Error fetching books: \(error)")
             }
         }
+    }
+}
+
+struct BookThumbnail: View {
+    let book: Book
+    
+    var body: some View {
+        VStack {
+            if let coverImageURL = book.coverImageURL, let url = URL(string: coverImageURL) {
+                AsyncImage(url: url) { image in
+                    image.resizable().aspectRatio(contentMode: .fit)
+                } placeholder: {
+                    Image(systemName: "book.fill")
+                }
+                .frame(width: 100, height: 150)
+            } else {
+                Image(systemName: "book.fill")
+                    .resizable()
+                    .frame(width: 100, height: 150)
+            }
+            Text(book.title)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+        }
+        .frame(width: 120)
+        .padding()
     }
 }
 
@@ -136,8 +150,14 @@ struct ShelfDetailView: View {
     }
 }
 
-#Preview {
-    ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        let storageManager = StorageManager()
+        let shelfManager = ShelfManager(storageManager: storageManager)
+        
+        return ContentView()
+            .environmentObject(storageManager)
+            .environmentObject(shelfManager)
+    }
 }
 

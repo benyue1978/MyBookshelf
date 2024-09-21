@@ -5,7 +5,8 @@ class StorageManager: ObservableObject {
     static let shared = StorageManager()
     private let coreDataManager: CoreDataManager
     
-    private init() {
+    // 将初始化方法改为公开
+    init() {
         self.coreDataManager = CoreDataManager.shared
     }
     
