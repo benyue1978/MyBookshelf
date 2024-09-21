@@ -44,11 +44,6 @@ struct BookView: View {
                             .resizable()
                             .aspectRatio(contentMode: .fit)
                             .frame(height: 200)
-                        
-                        // 添加调试信息
-                        Text("Displaying captured image")
-                            .font(.caption)
-                            .foregroundColor(.green)
                     } else if let coverImageURL = book.coverImageURL, let url = URL(string: coverImageURL) {
                         AsyncImage(url: url) { image in
                             image.resizable().aspectRatio(contentMode: .fit)
@@ -56,21 +51,11 @@ struct BookView: View {
                             ProgressView()
                         }
                         .frame(height: 200)
-                        
-                        // 添加调试信息
-                        Text("Displaying image from URL")
-                            .font(.caption)
-                            .foregroundColor(.blue)
                     } else {
                         Image(systemName: "book")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
                             .frame(height: 200)
-                        
-                        // 添加调试信息
-                        Text("No image available")
-                            .font(.caption)
-                            .foregroundColor(.red)
                     }
                     
                     TextField("Title", text: $book.title)
@@ -98,7 +83,10 @@ struct BookView: View {
                 isPresented = false
             }, trailing: Button(action: saveBook) {
                 Image(systemName: "checkmark")
-            })
+            }
+            .accessibilityIdentifier("Save")
+            )
+            .scrollContentBackground(.hidden)
             .onAppear {
                 shelfManager.loadShelves()
                 loadLastSelectedShelf()

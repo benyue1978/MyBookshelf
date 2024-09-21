@@ -1,10 +1,3 @@
-//
-//  ContentView.swift
-//  MyBookshelf
-//
-//  Created by song.yue on 2024/9/18.
-//
-
 import SwiftUI
 import Combine
 
@@ -16,38 +9,83 @@ struct ContentView: View {
     @State private var showingShelfListView = false
     @State private var showingScanner = false
     @State private var showingAddBook = false
+    @State private var showOnlyReadingList = false
     @State private var cancellables = Set<AnyCancellable>()
+
+    var filteredBooks: [Book] {
+        let books = showOnlyReadingList ? bookManager.readingListBooks : bookManager.books
+        if searchText.isEmpty {
+            return books
+        } else {
+            return books.filter { $0.title.lowercased().contains(searchText.lowercased()) }
+        }
+    }
 
     var body: some View {
         NavigationView {
-            VStack {
+            VStack(spacing: 0) {
                 // Search bar
                 TextField("Search books", text: $searchText)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding()
                 
-                // Reading list
-                Text("Reading List")
-                    .font(.headline)
-                    .padding(.top)
-                
-                ScrollView(.horizontal) {
-                    HStack {
-                        ForEach(bookManager.readingListBooks) { book in
-                            BookThumbnail(book: book)
+                // Main content area
+                GeometryReader { geometry in
+                    VStack(spacing: 0) {
+                        // Books section (2/3 of the available space)
+                        VStack(alignment: .leading) {
+                            HStack {
+                                Text("Books")
+                                    .font(.headline)
+                                Spacer()
+                                Toggle("Reading", isOn: $showOnlyReadingList)
+                                    .labelsHidden()
+                                Text("In Reading")
+                                    .font(.subheadline)
+                            }
+                            .padding(.horizontal)
+                            
+                            if filteredBooks.isEmpty {
+                                Text("No Books")
+                                    .foregroundColor(.secondary)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            } else {
+                                List(filteredBooks) { book in
+                                    BookRow(book: book)
+                                }
+                            }
                         }
-                    }
-                }
-                
-                // Shelves list
-                List(shelfManager.shelves) { shelf in
-                    NavigationLink(destination: ShelfDetailView(shelf: shelf)) {
-                        HStack {
-                            Text(shelf.name)
-                            Spacer()
-                            Text("\(shelf.bookCount) books")
-                                .foregroundColor(.secondary)
+                        .frame(height: geometry.size.height * 2/3)
+                        
+                        Divider().hidden()
+                        
+                        // Shelves section (1/3 of the available space)
+                        VStack(alignment: .leading) {
+                            Text("Shelves")
+                                .font(.headline)
+                                .padding(.horizontal)
+                            
+                            if shelfManager.shelves.isEmpty {
+                                Text("No Shelves")
+                                    .foregroundColor(.secondary)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            } else {
+                                List {
+                                    ForEach(shelfManager.shelves) { shelf in
+                                        NavigationLink(destination: ShelfDetailView(shelf: shelf)) {
+                                            HStack {
+                                                Text(shelf.name)
+                                                Spacer()
+                                                Text("\(shelf.bookCount) books")
+                                                    .foregroundColor(.secondary)
+                                            }
+                                        }
+                                    }
+                                }
+                                .listStyle(PlainListStyle())
+                            }
                         }
+                        .frame(height: geometry.size.height * 1/3)
                     }
                 }
                 
@@ -111,29 +149,36 @@ struct ContentView: View {
     }
 }
 
-struct BookThumbnail: View {
+struct BookRow: View {
     let book: Book
+    @EnvironmentObject var shelfManager: ShelfManager
     
     var body: some View {
-        VStack {
+        HStack {
             if let coverImageURL = book.coverImageURL, let url = URL(string: coverImageURL) {
                 AsyncImage(url: url) { image in
                     image.resizable().aspectRatio(contentMode: .fit)
                 } placeholder: {
                     Image(systemName: "book.fill")
                 }
-                .frame(width: 100, height: 150)
+                .frame(width: 60, height: 90)
             } else {
                 Image(systemName: "book.fill")
                     .resizable()
-                    .frame(width: 100, height: 150)
+                    .frame(width: 60, height: 90)
             }
-            Text(book.title)
-                .lineLimit(2)
-                .multilineTextAlignment(.center)
+            
+            VStack(alignment: .leading) {
+                Text(book.title)
+                    .font(.headline)
+                if let shelfUuid = book.shelfUuid,
+                   let shelf = shelfManager.shelves.first(where: { $0.id == shelfUuid }) {
+                    Text("Shelf: \(shelf.name)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
         }
-        .frame(width: 120)
-        .padding()
     }
 }
 
