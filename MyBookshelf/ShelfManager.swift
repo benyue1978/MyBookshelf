@@ -3,7 +3,8 @@ import Combine
 
 class ShelfManager: ObservableObject {
     @Published var shelves: [Shelf] = []
-    @Published var dataCleared = false
+    @Published var dataChanged = false
+    
     private var storageManager: StorageManager
     
     init(storageManager: StorageManager) {
@@ -20,27 +21,33 @@ class ShelfManager: ObservableObject {
                 case .failure(let error):
                     print("Failed to fetch shelves: \(error.localizedDescription)")
                 }
-                self.dataCleared = false
+                self.dataChanged = false
             }
         }
     }
     
     func addShelf(name: String, completion: @escaping (Result<Void, Error>) -> Void) {
         storageManager.addShelf(name: name, completion: completion)
+        self.dataChanged = true
+        completion(.success(()))
     }
     
     func updateShelf(id: UUID, newName: String, completion: @escaping (Result<Void, Error>) -> Void) {
         storageManager.updateShelf(id: id, newName: newName, completion: completion)
+        self.dataChanged = true
+        completion(.success(()))
     }
     
     func deleteShelf(id: UUID, completion: @escaping (Result<Void, Error>) -> Void) {
         storageManager.deleteShelf(id: id, completion: completion)
+        self.dataChanged = true
+        completion(.success(()))
     }
     
     func reinitialize(with storageManager: StorageManager) {
         self.storageManager = storageManager
         self.shelves = []
-        self.dataCleared = true
+        self.dataChanged = true
         loadShelves()
     }
 }

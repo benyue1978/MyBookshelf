@@ -2,7 +2,6 @@ import SwiftUI
 
 struct SettingsView: View {
     @Binding var isPresented: Bool
-    var onDataCleared: () -> Void
     @EnvironmentObject var storageManager: StorageManager
     @EnvironmentObject var shelfManager: ShelfManager
     @EnvironmentObject var bookManager: BookManager

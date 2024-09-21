@@ -3,13 +3,13 @@ import Combine
 
 struct ShelfListView: View {
     @Binding var isPresented: Bool
-    @Binding var updateTrigger: Bool
     @EnvironmentObject var shelfManager: ShelfManager
     @State private var newShelfName = ""
     @State private var isLoading = false
     @State private var alertItem: AlertItem?
     @State private var editingShelfId: UUID?
     @State private var editingShelfName = ""
+    @State private var cancellables = Set<AnyCancellable>()
     
     var body: some View {
         NavigationView {
@@ -61,16 +61,27 @@ struct ShelfListView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Back") {
-                        updateTrigger.toggle()  // 在关闭视图前触发更新
                         isPresented = false
                     }
                 }
             }
         }
-        .onAppear(perform: loadShelves)
+        .onAppear {
+            setupDataChangedObserver()
+            loadShelves()
+        }
         .alert(item: $alertItem) { item in
             Alert(title: Text(item.title), message: Text(item.message), dismissButton: .default(Text("OK")))
         }
+    }
+    
+    private func setupDataChangedObserver() {
+        shelfManager.$dataChanged
+            .filter { $0 }
+            .sink { _ in
+                self.loadShelves()
+            }
+            .store(in: &cancellables)
     }
     
     private func loadShelves() {
@@ -94,7 +105,6 @@ struct ShelfListView: View {
                 }
             }
         }
-        updateTrigger.toggle()  // 添加书架后触发更新
     }
     
     private func updateShelf(_ shelf: Shelf, newName: String) {
@@ -111,7 +121,6 @@ struct ShelfListView: View {
                 }
             }
         }
-        updateTrigger.toggle()  // 更新书架后触发更新
     }
     
     private func deleteShelf(at offsets: IndexSet) {
@@ -130,6 +139,5 @@ struct ShelfListView: View {
                 }
             }
         }
-        updateTrigger.toggle()  // 删除书架后触发更新
     }
 }

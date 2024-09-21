@@ -4,7 +4,7 @@ import Combine
 class BookManager: ObservableObject {
     @Published var books: [Book] = []
     @Published var readingListBooks: [Book] = []
-    @Published var dataCleared = false
+    @Published var dataChanged = false
     
     private var storageManager: StorageManager
     
@@ -20,10 +20,11 @@ class BookManager: ObservableObject {
                 case .success(let fetchedBooks):
                     self.books = fetchedBooks
                     self.readingListBooks = fetchedBooks.filter { $0.isInReadingList }
-                    self.dataCleared = false
+                    self.dataChanged = false
                 case .failure(let error):
                     print("Failed to fetch books: \(error.localizedDescription)")
                 }
+                self.dataChanged = false
             }
         }
     }
@@ -34,6 +35,7 @@ class BookManager: ObservableObject {
                 switch result {
                 case .success:
                     self.loadBooks()
+                    self.dataChanged = true
                     completion(.success(()))
                 case .failure(let error):
                     completion(.failure(error))
@@ -48,6 +50,7 @@ class BookManager: ObservableObject {
                 switch result {
                 case .success:
                     self.loadBooks()
+                    self.dataChanged = true
                     completion(.success(()))
                 case .failure(let error):
                     completion(.failure(error))
@@ -62,6 +65,7 @@ class BookManager: ObservableObject {
                 switch result {
                 case .success:
                     self.loadBooks()
+                    self.dataChanged = true
                     completion(.success(()))
                 case .failure(let error):
                     completion(.failure(error))
@@ -74,7 +78,7 @@ class BookManager: ObservableObject {
         self.storageManager = storageManager
         self.books = []
         self.readingListBooks = []
-        self.dataCleared = true
+        self.dataChanged = true
         loadBooks()
     }
 }

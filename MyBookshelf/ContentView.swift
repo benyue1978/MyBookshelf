@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import SwiftData
 import Combine
 
 struct ContentView: View {
@@ -17,7 +16,6 @@ struct ContentView: View {
     @State private var showingShelfListView = false
     @State private var showingScanner = false
     @State private var showingAddBook = false
-    @State private var shelfUpdateTrigger = false  // 新增：用于触发更新的状态
     @State private var cancellables = Set<AnyCancellable>()
 
     var body: some View {
@@ -82,13 +80,10 @@ struct ContentView: View {
                 }
             }
             .fullScreenCover(isPresented: $showingSettings) {
-                SettingsView(isPresented: $showingSettings, onDataCleared: loadData)
+                SettingsView(isPresented: $showingSettings)
             }
             .fullScreenCover(isPresented: $showingShelfListView) {
-                ShelfListView(isPresented: $showingShelfListView, updateTrigger: $shelfUpdateTrigger)
-            }
-            .onChange(of: shelfUpdateTrigger) { _, _ in
-                shelfManager.loadShelves()
+                ShelfListView(isPresented: $showingShelfListView)
             }
             .fullScreenCover(isPresented: $showingAddBook) {
                 BookView(book: Book(id: UUID(), title: "", author: "", isbn13: "", isbn10: "", publisher: "", publishDate: "", coverImageURL: nil, shelfUuid: nil, isInReadingList: false), isPresented: $showingAddBook)
@@ -96,14 +91,13 @@ struct ContentView: View {
         }
         .environmentObject(shelfManager)
         .onAppear {
-            setupDataClearedObserver()
-            bookManager.loadBooks()
-            shelfManager.loadShelves()
+            setupDataChangedObserver()
+            loadData()
         }
     }
 
-    private func setupDataClearedObserver() {
-        Publishers.CombineLatest(shelfManager.$dataCleared, bookManager.$dataCleared)
+    private func setupDataChangedObserver() {
+        Publishers.CombineLatest(shelfManager.$dataChanged, bookManager.$dataChanged)
             .filter { $0 || $1 }
             .sink { _ in
                 self.loadData()
