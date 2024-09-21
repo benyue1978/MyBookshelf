@@ -1,7 +1,7 @@
 import SwiftUI
 import Combine
 
-struct ShelfListView: View {
+struct ShelfEditView: View {
     @Binding var isPresented: Bool
     @EnvironmentObject var shelfManager: ShelfManager
     @State private var newShelfName = ""

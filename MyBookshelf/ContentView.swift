@@ -6,7 +6,7 @@ struct ContentView: View {
     @EnvironmentObject var bookManager: BookManager
     @State private var searchText = ""
     @State private var showingSettings = false
-    @State private var showingShelfListView = false
+    @State private var showingShelfEditView = false
     @State private var showingScanner = false
     @State private var showingAddBook = false
     @State private var showOnlyReadingList = false
@@ -94,21 +94,23 @@ struct ContentView: View {
                 
                 // Navigation buttons
                 HStack {
-                    // Button("Add Book") {
-                    //     showingAddBook = true
-                    // }
-                    // Spacer()
+                    if CommandLine.arguments.contains("--uitesting") {
+                        Button("Add Book") {
+                            showingAddBook = true
+                        }
+                        Spacer()
+                    }
                     Button("Scan ISBN") {
                         showingScanner = true
                     }
                     Spacer()
                     Button("Shelves") {
-                        showingShelfListView = true
+                        showingShelfEditView = true
                     }
-                    // Spacer()
-                    // Button("Settings") {
-                    //     showingSettings = true
-                    // }
+                    Spacer().hidden()
+                    Button("Settings") {
+                        showingSettings = true
+                    }.hidden()
                 }
                 .padding()
             }
@@ -125,8 +127,8 @@ struct ContentView: View {
             .fullScreenCover(isPresented: $showingSettings) {
                 SettingsView(isPresented: $showingSettings)
             }
-            .fullScreenCover(isPresented: $showingShelfListView) {
-                ShelfListView(isPresented: $showingShelfListView)
+            .fullScreenCover(isPresented: $showingShelfEditView) {
+                ShelfEditView(isPresented: $showingShelfEditView)
             }
             .fullScreenCover(isPresented: $showingScanner) {
                 ScannerView()

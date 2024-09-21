@@ -40,36 +40,42 @@ struct BookView: View {
                         Spacer()
                         TextField("", text: $book.title)
                             .multilineTextAlignment(.trailing)
+                            .accessibilityIdentifier("Title")
                     }
                     HStack {
                         Text("Author")
                         Spacer()
                         TextField("", text: $book.author)
                             .multilineTextAlignment(.trailing)
+                            .accessibilityIdentifier("Author")
                     }
                     HStack {
                         Text("Publisher")
                         Spacer()
                         TextField("", text: $book.publisher)
                             .multilineTextAlignment(.trailing)
+                            .accessibilityIdentifier("Publisher")
                     }
                     HStack {
                         Text("Publish Date")
                         Spacer()
                         TextField("", text: $book.publishDate)
                             .multilineTextAlignment(.trailing)
+                            .accessibilityIdentifier("Publish Date")
                     }
                     HStack {
                         Text("ISBN-13")
                         Spacer()
                         TextField("", text: $book.isbn13)
                             .multilineTextAlignment(.trailing)
+                            .accessibilityIdentifier("ISBN-13")
                     }
                     HStack {
                         Text("ISBN-10")
                         Spacer()
                         TextField("", text: $book.isbn10)
                             .multilineTextAlignment(.trailing)
+                            .accessibilityIdentifier("ISBN-10")
                     }
                 }
                 
@@ -84,6 +90,7 @@ struct BookView: View {
                 }
                 
                 Toggle("Add to Reading List", isOn: $book.isInReadingList)
+                    .accessibilityIdentifier("ReadingListToggle")
             }
             .navigationTitle("Book Details")
             .navigationBarItems(leading: Button("Cancel") {
