@@ -83,10 +83,8 @@ struct ScannerView: View {
         .sheet(isPresented: $showingBookView) {
             if let capturedImage = capturedImage {
                 BookView(isbn: scannedCode, coverImage: capturedImage, isPresented: $showingBookView)
-                    .environmentObject(storageManager)
             } else {
                 BookView(isbn: scannedCode, coverImage: nil, isPresented: $showingBookView)
-                    .environmentObject(storageManager)
             }
         }
         .alert(item: $alertItem) { alertItem in

@@ -11,6 +11,7 @@ struct ContentView: View {
     @State private var showingAddBook = false
     @State private var showOnlyReadingList = false
     @State private var cancellables = Set<AnyCancellable>()
+    @State private var selectedBook: Book?
 
     var filteredBooks: [Book] {
         let books = showOnlyReadingList ? bookManager.readingListBooks : bookManager.books
@@ -52,6 +53,9 @@ struct ContentView: View {
                             } else {
                                 List(filteredBooks) { book in
                                     BookRow(book: book)
+                                    .onTapGesture {
+                                        selectedBook = book
+                                    }
                                 }
                             }
                         }
@@ -125,6 +129,9 @@ struct ContentView: View {
             }
             .fullScreenCover(isPresented: $showingAddBook) {
                 BookView(book: Book(id: UUID(), title: "", author: "", isbn13: "", isbn10: "", publisher: "", publishDate: "", coverImageURL: nil, shelfUuid: nil, isInReadingList: false), isPresented: $showingAddBook)
+            }
+            .sheet(item: $selectedBook) { book in
+                BookView(book: book, isPresented: Binding.constant(true))
             }
         }
         .environmentObject(shelfManager)
