@@ -144,6 +144,8 @@ class CoreDataManager {
         do {
             let existingBooks = try context.fetch(fetchRequest)
             let bookEntity: BookEntity
+            let oldShelfUuid = existingBooks.first?.shelfUuid
+
             if let existingBook = existingBooks.first {
                 // 更新现有书籍
                 bookEntity = existingBook
@@ -156,6 +158,15 @@ class CoreDataManager {
             updateBookEntity(bookEntity, with: book)
             
             try context.save()
+
+            // 更新旧的和新的 shelf 的 bookCount
+            if let oldShelfUuid = oldShelfUuid {
+                updateShelfBookCount(shelfId: oldShelfUuid) { _ in }
+            }
+            if let newShelfUuid = book.shelfUuid {
+                updateShelfBookCount(shelfId: newShelfUuid) { _ in }
+            }
+
             completion(.success(()))
         } catch {
             completion(.failure(error))
@@ -182,11 +193,41 @@ class CoreDataManager {
         do {
             let results = try context.fetch(fetchRequest)
             if let bookToDelete = results.first {
+                let shelfUuid = bookToDelete.shelfUuid
+
                 context.delete(bookToDelete)
                 try context.save()
+
+                if let shelfUuid = shelfUuid {
+                    updateShelfBookCount(shelfId: shelfUuid) { _ in }
+                }
+
                 completion(.success(()))
             } else {
                 completion(.failure(NSError(domain: "com.myapp", code: 404, userInfo: [NSLocalizedDescriptionKey: "Book not found"])))
+            }
+        } catch {
+            completion(.failure(error))
+        }
+    }
+
+    func updateShelfBookCount(shelfId: UUID, completion: @escaping (Result<Int, Error>) -> Void) {
+        let context = persistentContainer.viewContext
+        let fetchRequest: NSFetchRequest<BookEntity> = BookEntity.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "shelfUuid == %@", shelfId as CVarArg)
+        
+        do {
+            let bookCount = try context.count(for: fetchRequest)
+            
+            let shelfFetchRequest: NSFetchRequest<ShelfEntity> = ShelfEntity.fetchRequest()
+            shelfFetchRequest.predicate = NSPredicate(format: "id == %@", shelfId as CVarArg)
+            
+            if let shelfEntity = try context.fetch(shelfFetchRequest).first {
+                shelfEntity.bookCount = Int16(bookCount)
+                try context.save()
+                completion(.success(bookCount))
+            } else {
+                completion(.failure(NSError(domain: "com.myapp", code: 404, userInfo: [NSLocalizedDescriptionKey: "Shelf not found"])))
             }
         } catch {
             completion(.failure(error))
