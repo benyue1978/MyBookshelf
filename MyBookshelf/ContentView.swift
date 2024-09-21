@@ -94,19 +94,21 @@ struct ContentView: View {
                 
                 // Navigation buttons
                 HStack {
-                    Button("Add Book") {
-                        showingAddBook = true
+                    // Button("Add Book") {
+                    //     showingAddBook = true
+                    // }
+                    // Spacer()
+                    Button("Scan ISBN") {
+                        showingScanner = true
                     }
-                    Spacer()
-                    ScannerButton()
                     Spacer()
                     Button("Shelves") {
                         showingShelfListView = true
                     }
-                    Spacer()
-                    Button("Settings") {
-                        showingSettings = true
-                    }
+                    // Spacer()
+                    // Button("Settings") {
+                    //     showingSettings = true
+                    // }
                 }
                 .padding()
             }
@@ -125,6 +127,9 @@ struct ContentView: View {
             }
             .fullScreenCover(isPresented: $showingShelfListView) {
                 ShelfListView(isPresented: $showingShelfListView)
+            }
+            .fullScreenCover(isPresented: $showingScanner) {
+                ScannerView()
             }
             .fullScreenCover(isPresented: $showingAddBook) {
                 BookView(book: Book(id: UUID(), title: "", author: "", isbn13: "", isbn10: "", publisher: "", publishDate: "", coverImage: nil, shelfUuid: nil, isInReadingList: false), isPresented: $showingAddBook)
@@ -200,16 +205,6 @@ struct BookRow: View {
         .sheet(isPresented: $showingBookView) {
             BookView(book: book, isPresented: $showingBookView)
         }
-    }
-}
-
-struct ShelfDetailView: View {
-    let shelf: Shelf
-    
-    var body: some View {
-        Text("Details for \(shelf.name)")
-        Spacer()
-        Text("\(shelf.bookCount) books")
     }
 }
 
