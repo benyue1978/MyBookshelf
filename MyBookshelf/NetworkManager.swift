@@ -6,7 +6,7 @@ class NetworkManager {
     private init() {}
     
     func fetchBookInfo(isbn: String, completion: @escaping (Result<Book, Error>) -> Void) {
-        let urlString = "https://isbnsearch.org/isbn/\(isbn)"
+        let urlString = "https://openlibrary.org/api/books?bibkeys=ISBN:\(isbn)&format=json&jscmd=data"
         guard let url = URL(string: urlString) else {
             completion(.failure(NSError(domain: "Invalid URL", code: 0, userInfo: nil)))
             return
@@ -23,9 +23,36 @@ class NetworkManager {
                 return
             }
             
-            // 这里需要解析HTML内容，为了简化，我们使用一个假的解析方法
-            let book = self.parseHTML(data: data, isbn: isbn)
-            completion(.success(book))
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+                   let bookData = json["ISBN:\(isbn)"] as? [String: Any] {
+                    let title = bookData["title"] as? String ?? ""
+                    let authors = (bookData["authors"] as? [[String: Any]])?.compactMap { $0["name"] as? String } ?? []
+                    let publisher = (bookData["publishers"] as? [[String: Any]])?.first?["name"] as? String ?? ""
+                    let publishDate = bookData["publish_date"] as? String ?? ""
+                    
+                    var coverImage: Data?
+                    if let coverURL = (bookData["cover"] as? [String: Any])?["medium"] as? String,
+                       let url = URL(string: coverURL) {
+                        coverImage = try? Data(contentsOf: url)
+                    }
+                    
+                    let book = Book(id: UUID(),
+                                    title: title,
+                                    author: authors.joined(separator: ", "),
+                                    isbn13: isbn,
+                                    isbn10: "",
+                                    publisher: publisher,
+                                    publishDate: publishDate,
+                                    coverImage: coverImage)
+                    
+                    completion(.success(book))
+                } else {
+                    completion(.failure(NSError(domain: "Invalid data format", code: 0, userInfo: nil)))
+                }
+            } catch {
+                completion(.failure(error))
+            }
         }.resume()
     }
     
