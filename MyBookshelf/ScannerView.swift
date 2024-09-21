@@ -129,6 +129,9 @@ struct ScannerView: View {
         .sheet(isPresented: $showingBookView) {
             if let book = fetchedBook {
                 BookView(book: book, isPresented: $showingBookView)
+                    .onDisappear {
+                        resetScannerState()
+                    }
             }
         }
     }

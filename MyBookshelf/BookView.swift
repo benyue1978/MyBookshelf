@@ -22,6 +22,8 @@ struct BookView: View {
         if let coverImageData = book.coverImage {
             self._coverImage = State(initialValue: UIImage(data: coverImageData))
         }
+        // 初始化 selectedShelf
+        self._selectedShelf = State(initialValue: book.shelfUuid)
     }
 
     var body: some View {
