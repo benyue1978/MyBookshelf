@@ -2,11 +2,9 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>audio</string>
-	</array>
 	<key>Privacy - Camera Usage Description</key>
 	<string>This app needs access to the camera to scan book covers and ISBNs.</string>
+	<key>UIBackgroundModes</key>
+	<array/>
 </dict>
 </plist>
